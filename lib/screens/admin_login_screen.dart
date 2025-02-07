@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'admin_dashboard_screen.dart'; // Import the AdminDashboardScreen
-import 'login_screen.dart'; // Import the LoginScreen for going back
 
 class AdminLoginScreen extends StatefulWidget {
   @override
@@ -57,7 +56,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                       TextFormField(
                         controller: _usernameController,
                         decoration: InputDecoration(
-                          labelText: 'Username',
+                          hintText: 'Enter your username',  // Changed from labelText to hintText
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
@@ -76,7 +75,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                         controller: _passwordController,
                         obscureText: true,
                         decoration: InputDecoration(
-                          labelText: 'Password',
+                          hintText: 'Enter your password',  // Changed from labelText to hintText
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(

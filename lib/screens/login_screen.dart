@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'admin_login_screen.dart'; // Import the AdminLoginScreen
 import 'event_details_screen.dart'; // Import the EventDetailsScreen
+import 'sign_in_screen.dart'; // Import the SignUpScreen
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -39,6 +40,14 @@ class _LoginScreenState extends State<LoginScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => AdminLoginScreen()),
+    );
+  }
+
+  // Function to navigate to the Sign Up page
+  void _navigateToSignUp() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => SignInScreen()), // Navigate to SignUpScreen
     );
   }
 
@@ -120,6 +129,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       ElevatedButton(
                         onPressed: _handleLogin, // Handle login for regular user
                         child: Text('Log In'),
+                      ),
+                      SizedBox(height: 16),
+                      TextButton(
+                        onPressed: _navigateToSignUp, // Navigate to Sign Up screen
+                        child: Text(
+                          'Don’t have an account? Sign Up',
+                          style: TextStyle(color: Colors.white),
+                        ),
                       ),
                     ],
                   ),

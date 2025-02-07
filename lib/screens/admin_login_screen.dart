@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'admin_dashboard_screen.dart'; // Import the AdminDashboardScreen
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'admin_dashboard_screen.dart';
 
 class AdminLoginScreen extends StatefulWidget {
   @override
@@ -11,37 +12,67 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  // Dummy authentication logic
-  bool _validateAdminLogin(String username, String password) {
-    return username == 'admin' && password == 'admin123';
+  // Function to validate admin login
+  Future<bool> _validateAdminLogin(String username, String password) async {
+    try {
+      // Query Firestore to check if admin exists
+      QuerySnapshot query = await FirebaseFirestore.instance
+          .collection('admin')
+          .where('username', isEqualTo: username)
+          .where('password', isEqualTo: password) // Insecure, use hashing instead
+          .get();
+
+      return query.docs.isNotEmpty; // If there is a match, return true
+    } catch (e) {
+      print("Error checking admin login: $e");
+      return false;
+    }
+  }
+
+  void _handleLogin() async {
+    if (_formKey.currentState?.validate() ?? false) {
+      bool isValid = await _validateAdminLogin(
+          _usernameController.text, _passwordController.text);
+      if (isValid) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => AdminDashboardScreen()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Invalid username or password')),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Set the background color using gradient
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color.fromARGB(255, 122, 17, 17), // Dark Red
-              Color.fromARGB(255, 172, 49, 49), // Light Red
+           Color.fromARGB(255, 16, 237, 237), // Cyan
+        Color.fromARGB(255, 255, 255, 255),
             ],
           ),
         ),
         child: Column(
           children: [
-            // AppBar with transparent background so the gradient shows through
             AppBar(
-              title: Text("Admin Login"),
-              backgroundColor: Colors.transparent, // Make AppBar background transparent
-              elevation: 0, // Remove the shadow
-              leading: IconButton(  // This adds the back button
-                icon: Icon(Icons.arrow_back),
+              title: Text(
+                "Admin Login",
+                style: TextStyle(color: Colors.white),
+              ),
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              leading: IconButton(
+                icon: Icon(Icons.arrow_back, color: Colors.white),
                 onPressed: () {
-                  Navigator.pop(context); // Go back to the previous screen (LoginScreen)
+                  Navigator.pop(context); // Go back to the previous screen
                 },
               ),
             ),
@@ -53,15 +84,17 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: <Widget>[
+                      // Username text field
                       TextFormField(
                         controller: _usernameController,
                         decoration: InputDecoration(
-                          hintText: 'Enter your username',  // Changed from labelText to hintText
+                          hintText: 'Enter your username',
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
+                          errorStyle: TextStyle(color: Colors.white), // Set error text color to white
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -71,16 +104,18 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                         },
                       ),
                       SizedBox(height: 16),
+                      // Password text field
                       TextFormField(
                         controller: _passwordController,
                         obscureText: true,
                         decoration: InputDecoration(
-                          hintText: 'Enter your password',  // Changed from labelText to hintText
+                          hintText: 'Enter your password',
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
+                          errorStyle: TextStyle(color: Colors.white), // Set error text color to white
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -90,25 +125,9 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                         },
                       ),
                       SizedBox(height: 24),
+                      // Login button
                       ElevatedButton(
-                        onPressed: () {
-                          if (_formKey.currentState?.validate() ?? false) {
-                            // Validate admin login credentials
-                            if (_validateAdminLogin(
-                                _usernameController.text, _passwordController.text)) {
-                              // If valid, navigate to the admin dashboard
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(builder: (context) => AdminDashboardScreen()),
-                              );
-                            } else {
-                              // Show error if login fails
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Invalid username or password')),
-                              );
-                            }
-                          }
-                        },
+                        onPressed: _handleLogin,
                         style: ElevatedButton.styleFrom(
                           minimumSize: Size(150, 50),
                         ),

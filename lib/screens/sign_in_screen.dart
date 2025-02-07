@@ -15,12 +15,6 @@ class _SignInScreenState extends State<SignInScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  final FocusNode _nameFocus = FocusNode();
-  final FocusNode _studentIdFocus = FocusNode();
-  final FocusNode _phoneFocus = FocusNode();
-  final FocusNode _emailFocus = FocusNode();
-  final FocusNode _passwordFocus = FocusNode();
-
   bool _isLoading = false;
 
   void _signUp() async {
@@ -30,13 +24,11 @@ class _SignInScreenState extends State<SignInScreen> {
       });
 
       try {
-        // Create user authentication
         UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
 
-        // Save user details to Firestore (Collection: "users", Document: Student ID)
         await FirebaseFirestore.instance.collection("users").doc(_studentIdController.text.trim()).set({
           "name": _nameController.text.trim(),
           "studentId": _studentIdController.text.trim(),
@@ -53,9 +45,7 @@ class _SignInScreenState extends State<SignInScreen> {
           SnackBar(content: Text('Sign-up successful!')),
         );
 
-        // Navigate to home screen (or login screen)
         Navigator.pushReplacementNamed(context, '/home');
-
       } catch (e) {
         setState(() {
           _isLoading = false;
@@ -69,32 +59,24 @@ class _SignInScreenState extends State<SignInScreen> {
   }
 
   Widget _buildTextField(TextEditingController controller, String hint,
-      {TextInputType keyboardType = TextInputType.text, TextInputAction? action, FocusNode? focusNode, FocusNode? nextFocus}) {
+      {TextInputType keyboardType = TextInputType.text}) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
-      textInputAction: action ?? TextInputAction.next,
-      focusNode: focusNode,
-      onFieldSubmitted: (value) {
-        if (nextFocus != null) {
-          FocusScope.of(context).requestFocus(nextFocus);
-        }
-      },
+      style: TextStyle(color: const Color.fromARGB(255, 0, 0, 0)), // Text color white
       decoration: InputDecoration(
-        hintText: hint,  // Changed from labelText to hintText
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),  // Set the radius for rounded corners
-        ),
+        hintText: hint,
+        hintStyle: TextStyle(color: const Color.fromARGB(179, 0, 0, 0)), // Subtle white hint text
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),  // Same for enabled state
-          borderSide: BorderSide(color: Colors.grey, width: 1), // Optional border color for enabled state
+          borderRadius: BorderRadius.circular(30),
+          borderSide: BorderSide(color: const Color.fromARGB(179, 0, 0, 0)), // White border
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),  // Same for focused state
-          borderSide: BorderSide(color: Color.fromARGB(255, 122, 17, 17), width: 2), // Border color when focused
+          borderRadius: BorderRadius.circular(30),
+          borderSide: BorderSide(color: const Color.fromARGB(255, 0, 0, 0)), // Stronger white border on focus
         ),
         filled: true,
-        fillColor: Colors.white,
+        fillColor:  Colors.white.withOpacity(0.8), // Fully transparent field
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
@@ -110,58 +92,80 @@ class _SignInScreenState extends State<SignInScreen> {
       _passwordController,
       'Enter your password',
       keyboardType: TextInputType.visiblePassword,
-      action: TextInputAction.done,
-      focusNode: _passwordFocus,
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text(
-          'Sign In',
-          style: TextStyle(color: Colors.white),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () {
+            Navigator.pop(context);
+          },
         ),
-        backgroundColor: Color.fromARGB(255, 122, 17, 17),
       ),
-      body: Container(
-        padding: EdgeInsets.all(16.0),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color.fromARGB(255, 122, 17, 17),
-              Color.fromARGB(255, 172, 49, 49),
-            ],
+      
+      body: Stack(
+        children: [
+          // Background Image
+          Positioned.fill(
+            child: Image.asset(
+              'assets/Untitleddesign.png',
+              fit: BoxFit.cover,
+            ),
           ),
-        ),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              _buildTextField(_nameController, 'Enter your name', focusNode: _nameFocus, nextFocus: _studentIdFocus),
-              SizedBox(height: 16),
-              _buildTextField(_studentIdController, 'Enter your Student ID', focusNode: _studentIdFocus, nextFocus: _phoneFocus),
-              SizedBox(height: 16),
-              _buildTextField(_phoneController, 'Enter your phone number', keyboardType: TextInputType.phone, focusNode: _phoneFocus, nextFocus: _emailFocus),
-              SizedBox(height: 16),
-              _buildTextField(_emailController, 'Enter your email', keyboardType: TextInputType.emailAddress, focusNode: _emailFocus, nextFocus: _passwordFocus),
-              SizedBox(height: 16),
-              _buildPasswordField(),
-              SizedBox(height: 16),
-              _isLoading  // Show loading indicator if sign-up is in progress
-                  ? CircularProgressIndicator()
-                  : ElevatedButton(
-                      onPressed: _signUp,
-                      style: ElevatedButton.styleFrom(minimumSize: Size(150, 50)),
-                      child: Text('Sign Up'),
-                    ),
-            ],
+
+          // Transparent Overlay
+          Container(
+            color: Colors.black.withOpacity(0.3), // Light overlay for better visibility
           ),
-        ),
+
+          // Form and Button Container
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0),
+            child: Center(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(height: 40), // Adjusted space from top
+                    _buildTextField(_nameController, 'Enter your name'),
+                    SizedBox(height: 16),
+                    _buildTextField(_studentIdController, 'Enter your Student ID'),
+                    SizedBox(height: 16),
+                    _buildTextField(_phoneController, 'Enter your phone number', keyboardType: TextInputType.phone),
+                    SizedBox(height: 16),
+                    _buildTextField(_emailController, 'Enter your email', keyboardType: TextInputType.emailAddress),
+                    SizedBox(height: 16),
+                    _buildPasswordField(),
+                    SizedBox(height: 30),
+
+                    // Sign-Up Button
+                    _isLoading
+                        ? CircularProgressIndicator()
+                        : ElevatedButton(
+                            onPressed: _signUp,
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: Size(double.infinity, 50),
+                              backgroundColor: Colors.teal, // Consistent button color
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                            ),
+                            child: Text('Sign Up', style: TextStyle(fontSize: 18, color: Colors.white)),
+                          ),
+                    SizedBox(height: 20), // Reduced extra bottom space
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

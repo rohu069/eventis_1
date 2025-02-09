@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'login_screen.dart'; // Import Login Screen
 
 class SignInScreen extends StatefulWidget {
   @override
@@ -18,18 +19,24 @@ class _SignInScreenState extends State<SignInScreen> {
   bool _isLoading = false;
 
   void _signUp() async {
+    print("Sign-up button pressed");
+
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
       });
 
       try {
-        UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        UserCredential userCredential =
+            await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
 
-        await FirebaseFirestore.instance.collection("users").doc(_studentIdController.text.trim()).set({
+        await FirebaseFirestore.instance
+            .collection("users")
+            .doc(_studentIdController.text.trim())
+            .set({
           "name": _nameController.text.trim(),
           "studentId": _studentIdController.text.trim(),
           "phone": _phoneController.text.trim(),
@@ -45,7 +52,12 @@ class _SignInScreenState extends State<SignInScreen> {
           SnackBar(content: Text('Sign-up successful!')),
         );
 
-        Navigator.pushReplacementNamed(context, '/home');
+        // Navigate to Login Screen
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => LoginScreen()),
+        );
+
       } catch (e) {
         setState(() {
           _isLoading = false;
@@ -63,20 +75,20 @@ class _SignInScreenState extends State<SignInScreen> {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
-      style: TextStyle(color: const Color.fromARGB(255, 0, 0, 0)), // Text color white
+      style: TextStyle(color: Colors.black),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: const Color.fromARGB(179, 0, 0, 0)), // Subtle white hint text
+        hintStyle: TextStyle(color: Colors.black54),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide(color: const Color.fromARGB(179, 0, 0, 0)), // White border
+          borderSide: BorderSide(color: Colors.black54),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide(color: const Color.fromARGB(255, 0, 0, 0)), // Stronger white border on focus
+          borderSide: BorderSide(color: Colors.black),
         ),
         filled: true,
-        fillColor:  Colors.white.withOpacity(0.8), // Fully transparent field
+        fillColor: Colors.white.withOpacity(0.8),
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
@@ -112,55 +124,58 @@ class _SignInScreenState extends State<SignInScreen> {
       
       body: Stack(
         children: [
-          // Background Image
           Positioned.fill(
-            child: Image.asset(
-              'assets/Untitleddesign.png',
-              fit: BoxFit.cover,
+            child: IgnorePointer(
+              child: Image.asset(
+                'assets/Untitleddesign.png',
+                fit: BoxFit.cover,
+              ),
             ),
           ),
 
-          // Transparent Overlay
-          Container(
-            color: Colors.black.withOpacity(0.3), // Light overlay for better visibility
+          IgnorePointer(
+            child: Container(
+              color: Colors.black.withOpacity(0.3),
+            ),
           ),
 
-          // Form and Button Container
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.0),
             child: Center(
               child: SingleChildScrollView(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(height: 40), // Adjusted space from top
-                    _buildTextField(_nameController, 'Enter your name'),
-                    SizedBox(height: 16),
-                    _buildTextField(_studentIdController, 'Enter your Student ID'),
-                    SizedBox(height: 16),
-                    _buildTextField(_phoneController, 'Enter your phone number', keyboardType: TextInputType.phone),
-                    SizedBox(height: 16),
-                    _buildTextField(_emailController, 'Enter your email', keyboardType: TextInputType.emailAddress),
-                    SizedBox(height: 16),
-                    _buildPasswordField(),
-                    SizedBox(height: 30),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(height: 40),
+                      _buildTextField(_nameController, 'Enter your name'),
+                      SizedBox(height: 16),
+                      _buildTextField(_studentIdController, 'Enter your Student ID'),
+                      SizedBox(height: 16),
+                      _buildTextField(_phoneController, 'Enter your phone number', keyboardType: TextInputType.phone),
+                      SizedBox(height: 16),
+                      _buildTextField(_emailController, 'Enter your email', keyboardType: TextInputType.emailAddress),
+                      SizedBox(height: 16),
+                      _buildPasswordField(),
+                      SizedBox(height: 30),
 
-                    // Sign-Up Button
-                    _isLoading
-                        ? CircularProgressIndicator()
-                        : ElevatedButton(
-                            onPressed: _signUp,
-                            style: ElevatedButton.styleFrom(
-                              minimumSize: Size(double.infinity, 50),
-                              backgroundColor: Colors.teal, // Consistent button color
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
+                      _isLoading
+                          ? CircularProgressIndicator()
+                          : ElevatedButton(
+                              onPressed: _signUp,
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: Size(double.infinity, 50),
+                                backgroundColor: Colors.teal,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
                               ),
+                              child: Text('Sign Up', style: TextStyle(fontSize: 18, color: Colors.white)),
                             ),
-                            child: Text('Sign Up', style: TextStyle(fontSize: 18, color: Colors.white)),
-                          ),
-                    SizedBox(height: 20), // Reduced extra bottom space
-                  ],
+                      SizedBox(height: 20),
+                    ],
+                  ),
                 ),
               ),
             ),

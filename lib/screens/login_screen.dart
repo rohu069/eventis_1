@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Import Firebase Auth
-import 'admin_login_screen.dart'; // Import the AdminLoginScreen
-import 'event_details_screen.dart'; // Import the EventDetailsScreen
-import 'sign_in_screen.dart'; // Import the SignUpScreen
+import 'package:appwrite/appwrite.dart';
+// import 'package:appwrite/models.dart';
+import 'admin_login_screen.dart';
+import 'event_details_screen.dart';
+import 'sign_in_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,39 +13,62 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-
   final _formKey = GlobalKey<FormState>();
 
-  // Firebase Auth instance
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  // Appwrite Client
+  final Client client = Client()
+    ..setEndpoint('https://cloud.appwrite.io/v1') // ✅ Use the correct endpoint
+    ..setProject('67aa277600042d235f09'); // 🔹 Replace with your Appwrite project ID
 
-  // Function to handle login with Firebase
-  Future<void> _handleLogin() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      try {
-        // Firebase sign-in using email/password
-        await _auth.signInWithEmailAndPassword(
-          email: _usernameController.text, // Using the username as email
-          password: _passwordController.text,
-        );
+  late final Account account;
 
-        // If successful, navigate to the event details screen
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => EventDetailsScreen()),
-        );
-      } on FirebaseAuthException catch (e) {
-        // Handle errors (invalid credentials, etc.)
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login failed: ${e.message}')),
-        );
-      }
-    }
+  @override
+  void initState() {
+    super.initState();
+    account = Account(client);
   }
 
-  // Function to handle navigation to Admin Login page
+  // Function to handle login using Appwrite
+Future<void> _handleLogin() async {
+  if (!_formKey.currentState!.validate()) return;
+
+  try {
+    // 🔍 Check if a user is already logged in
+    try {
+      final user = await account.get();
+      if (user.$id.isNotEmpty) {
+        print("✅ User already logged in: ${user.$id}");
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const EventDetailsScreen()),
+        );
+        return; // Exit function if already logged in
+      }
+    } catch (e) {
+      print("⚠ No active session found. Proceeding with login...");
+    }
+
+    // ✅ Now, create a new login session
+    await account.createEmailPasswordSession(
+      email: _emailController.text,
+      password: _passwordController.text,
+    );
+
+    // ✅ Navigate to event details screen after successful login
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const EventDetailsScreen()),
+    );
+  } on AppwriteException catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Login failed: ${e.message}')),
+    );
+  }
+}
+
+  // Navigate to Admin Login page
   void _navigateToAdminLogin() {
     Navigator.push(
       context,
@@ -52,115 +76,113 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Function to navigate to the Sign Up page
+  // Navigate to Sign Up page
   void _navigateToSignUp() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => SignInScreen()), // Navigate to SignUpScreen
+      MaterialPageRoute(builder: (context) => SignInScreen()), 
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Set the background color using gradient
       body: Container(
-  decoration: BoxDecoration(
-    image: DecorationImage(
-      image: AssetImage('assets/Untitleddesign.png'), // Ensure the image is in the assets folder
-      fit: BoxFit.cover, // Cover the entire screen
-    ),
-    gradient: LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: [
-        Color.fromARGB(255, 16, 237, 237), // Cyan
-        Color.fromARGB(255, 255, 255, 255), // White
-      ],
-    ),
-  ),
-  child: Column(
-    children: [
-      AppBar(
-        title: Text(
-          'Login Screen',
-          style: TextStyle(color: Colors.white),
-        ),
-        backgroundColor: Colors.transparent, // Transparent AppBar
-        elevation: 0,
-        actions: <Widget>[
-          IconButton(
-            icon: Icon(Icons.admin_panel_settings),
-            onPressed: _navigateToAdminLogin,
+        decoration: BoxDecoration(
+          image: const DecorationImage(
+            image: AssetImage('assets/Untitleddesign.png'),
+            fit: BoxFit.cover,
           ),
-        ],
-      ),
-      Expanded(
-        child: Padding(
-          padding: EdgeInsets.all(16.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                TextFormField(
-                  controller: _usernameController,
-                  decoration: InputDecoration(
-                    hintText: 'Username',
-                    filled: true,
-                    fillColor: Colors.white.withOpacity(0.8), // Make fields slightly transparent
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your username';
-                    }
-                    return null;
-                  },
-                ),
-                SizedBox(height: 16),
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    hintText: 'Password',
-                    filled: true,
-                    fillColor: Colors.white.withOpacity(0.8),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your password';
-                    }
-                    return null;
-                  },
-                ),
-                SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: _handleLogin,
-                  child: Text('Log In'),
-                ),
-                SizedBox(height: 16),
-                TextButton(
-                  onPressed: _navigateToSignUp,
-                  child: Text(
-                    'Don’t have an account? Sign Up',
-                    style: TextStyle(color: Colors.black),
-                  ),
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color.fromARGB(255, 16, 237, 237),
+              Color.fromARGB(255, 255, 255, 255),
+            ],
+          ),
+        ),
+        child: Column(
+          children: [
+            AppBar(
+              title: const Text(
+                'Login Screen',
+                style: TextStyle(color: Colors.white),
+              ),
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              actions: <Widget>[
+                IconButton(
+                  icon: const Icon(Icons.admin_panel_settings),
+                  onPressed: _navigateToAdminLogin,
                 ),
               ],
             ),
-          ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      TextFormField(
+                        controller: _emailController,
+                        decoration: InputDecoration(
+                          hintText: 'Email',
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.8),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your email';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _passwordController,
+                        obscureText: true,
+                        decoration: InputDecoration(
+                          hintText: 'Password',
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.8),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your password';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _handleLogin,
+                        child: const Text('Log In'),
+                      ),
+                      const SizedBox(height: 16),
+                      TextButton(
+                        onPressed: _navigateToSignUp,
+                        child: const Text(
+                          'Don’t have an account? Sign Up',
+                          style: TextStyle(color: Colors.black),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
-    ],
-  ),
-),
-
     );
   }
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'login_screen.dart'; // Import Login Screen
+import 'package:appwrite/appwrite.dart';
+import 'package:appwrite/models.dart';
+import 'login_screen.dart';
 
 class SignInScreen extends StatefulWidget {
   @override
@@ -18,57 +18,90 @@ class _SignInScreenState extends State<SignInScreen> {
 
   bool _isLoading = false;
 
-  void _signUp() async {
-    print("Sign-up button pressed");
+  final Client client = Client()
+    ..setEndpoint('https://cloud.appwrite.io/v1') // Replace with Appwrite endpoint
+    ..setProject('67aa277600042d235f09'); // Replace with Appwrite project ID
+    
 
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
+  late final Account account;
+  late final Databases databases;
 
-      try {
-        UserCredential userCredential =
-            await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
-        );
-
-        await FirebaseFirestore.instance
-            .collection("users")
-            .doc(_studentIdController.text.trim())
-            .set({
-          "name": _nameController.text.trim(),
-          "studentId": _studentIdController.text.trim(),
-          "phone": _phoneController.text.trim(),
-          "email": _emailController.text.trim(),
-          "uid": userCredential.user!.uid,
-        });
-
-        setState(() {
-          _isLoading = false;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Sign-up successful!')),
-        );
-
-        // Navigate to Login Screen
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => LoginScreen()),
-        );
-
-      } catch (e) {
-        setState(() {
-          _isLoading = false;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
-        );
-      }
-    }
+  @override
+  void initState() {
+    super.initState();
+    account = Account(client);
+    databases = Databases(client);
   }
+
+Future<void> _signUp() async {
+  if (!_formKey.currentState!.validate()) return;
+
+  setState(() {
+    _isLoading = true;
+  });
+
+  try {
+    // 1️⃣ Create User Account (This automatically logs in the user)
+    final User newUser = await account.create(
+      userId: ID.unique(),
+      email: _emailController.text,
+      password: _passwordController.text,
+    );
+    print("✅ User Created: ${newUser.$id}");
+
+    // 2️⃣ No need to create a session manually!
+
+    // 3️⃣ Fetch the authenticated user (they are already logged in)
+    final User loggedInUser = await account.get();
+    print("✅ Logged In User: ${loggedInUser.$id}");
+
+    // 4️⃣ Create Document with Correct Permissions
+    await databases.createDocument(
+      databaseId: '67aa2889002cd582ca1c',
+      collectionId: '67aa28a80008eb0d3bda',
+      documentId: ID.unique(),
+      data: {
+        'name': _nameController.text,
+        'studentId': _studentIdController.text,
+        'phone': _phoneController.text,
+        'email': _emailController.text,
+        'userId': loggedInUser.$id,
+      },
+      permissions: [
+  Permission.read(Role.any()), // Everyone can read
+  Permission.write(Role.any()), // Everyone can write
+],
+
+    );
+    print("✅ Document Created Successfully");
+
+    // 5️⃣ Show Success Message & Navigate to Login Screen
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Sign-up successful! Please log in.')),
+    );
+
+    await Future.delayed(Duration(milliseconds: 500));
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => LoginScreen()),
+    );
+  } on AppwriteException catch (e) {
+    print("❌ Appwrite Exception: ${e.message}");
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Sign-up failed: ${e.message}')),
+    );
+  } catch (e) {
+    print("❌ Unexpected Error: $e");
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('An unexpected error occurred. Please try again.')),
+    );
+  }
+
+  setState(() {
+    _isLoading = false;
+  });
+}
 
   Widget _buildTextField(TextEditingController controller, String hint,
       {TextInputType keyboardType = TextInputType.text}) {
@@ -121,7 +154,6 @@ class _SignInScreenState extends State<SignInScreen> {
           },
         ),
       ),
-      
       body: Stack(
         children: [
           Positioned.fill(
@@ -132,13 +164,11 @@ class _SignInScreenState extends State<SignInScreen> {
               ),
             ),
           ),
-
           IgnorePointer(
             child: Container(
               color: Colors.black.withOpacity(0.3),
             ),
           ),
-
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.0),
             child: Center(
@@ -159,7 +189,6 @@ class _SignInScreenState extends State<SignInScreen> {
                       SizedBox(height: 16),
                       _buildPasswordField(),
                       SizedBox(height: 30),
-
                       _isLoading
                           ? CircularProgressIndicator()
                           : ElevatedButton(

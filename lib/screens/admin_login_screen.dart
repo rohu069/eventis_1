@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'admin_dashboard_screen.dart';
 
 class AdminLoginScreen extends StatefulWidget {
@@ -12,28 +11,14 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  // Function to validate admin login
-  Future<bool> _validateAdminLogin(String username, String password) async {
-    try {
-      // Query Firestore to check if admin exists
-      QuerySnapshot query = await FirebaseFirestore.instance
-          .collection('admin')
-          .where('username', isEqualTo: username)
-          .where('password', isEqualTo: password) // Insecure, use hashing instead
-          .get();
+  // Dummy credentials (Replace with secure authentication logic)
+  final String correctUsername = "admin";
+  final String correctPassword = "password123";
 
-      return query.docs.isNotEmpty; // If there is a match, return true
-    } catch (e) {
-      print("Error checking admin login: $e");
-      return false;
-    }
-  }
-
-  void _handleLogin() async {
+  void _handleLogin() {
     if (_formKey.currentState?.validate() ?? false) {
-      bool isValid = await _validateAdminLogin(
-          _usernameController.text, _passwordController.text);
-      if (isValid) {
+      if (_usernameController.text == correctUsername &&
+          _passwordController.text == correctPassword) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => AdminDashboardScreen()),
@@ -55,8 +40,8 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-           Color.fromARGB(255, 16, 237, 237), // Cyan
-        Color.fromARGB(255, 255, 255, 255),
+              Color.fromARGB(255, 16, 237, 237), // Cyan
+              Color.fromARGB(255, 255, 255, 255),
             ],
           ),
         ),
@@ -94,7 +79,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          errorStyle: TextStyle(color: Colors.white), // Set error text color to white
+                          errorStyle: TextStyle(color: Colors.white),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -115,7 +100,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          errorStyle: TextStyle(color: Colors.white), // Set error text color to white
+                          errorStyle: TextStyle(color: Colors.white),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {

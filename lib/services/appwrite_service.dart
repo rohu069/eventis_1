@@ -50,19 +50,30 @@ class AppwriteService {
   static Future<String?> login({required String email, required String password}) async {
     try {
       await account.createEmailPasswordSession(email: email, password: password);
+
+      // Verify session creation
+      models.User user = await account.get();
+      print("✅ Login Successful: ${user.$id}");
+
       return null; // Success
+    } on AppwriteException catch (e) {
+      print('Login Error: ${e.message}');
+      return e.message;
     } catch (e) {
-      print('Login Error: $e');
-      return e.toString(); // Return error
+      print('Unexpected Login Error: $e');
+      return e.toString();
     }
   }
 
   // **3️⃣ Logout Method**
   static Future<void> logout() async {
     try {
-      await account.deleteSession(sessionId: 'current');
+      await account.deleteSessions();
+      print("✅ User successfully logged out.");
+    } on AppwriteException catch (e) {
+      print('Logout Error: ${e.message}');
     } catch (e) {
-      print('Logout Error: $e');
+      print('Unexpected Logout Error: $e');
     }
   }
 
@@ -122,6 +133,7 @@ class AppwriteService {
           'event_date': eventDate,
           'event_venue': eventVenue,
           'event_image_id': fileId, // Store file ID instead of full URL
+          'is_verified': false, // Add verification flag (default: false)
         },
       );
 
@@ -132,7 +144,41 @@ class AppwriteService {
     }
   }
 
-  // **6️⃣ Get Current User ID**
+  // **6️⃣ Get Event Registrations for Admin Dashboard**
+// **8️⃣ Fetch Event Registrations for Admin Dashboard**
+static Future<List<Map<String, dynamic>>> getEventRegistrations() async {
+  try {
+    final response = await databases.listDocuments(
+      databaseId: '67aa2889002cd582ca1c', // Your database ID
+      collectionId: '67b78ecb001e8c2ac03d', // Your event registrations collection ID
+    );
+
+    return response.documents.map((doc) => doc.data).toList();
+  } catch (e) {
+    print('Error fetching event registrations: $e');
+    return [];
+  }
+}
+
+  // **7️⃣ Verify Event Registration (Admin)**
+  static Future<bool> verifyEvent(String documentId) async {
+    try {
+      await databases.updateDocument(
+        databaseId: '67aa2889002cd582ca1c',
+        collectionId: '67b78ecb001e8c2ac03d',
+        documentId: documentId,
+        data: {'is_verified': true}, // Mark event as verified
+      );
+
+      print('✅ Event verified successfully.');
+      return true;
+    } catch (e) {
+      print('Error verifying event: $e');
+      return false;
+    }
+  }
+
+  // **8️⃣ Get Current User ID**
   static Future<String?> getCurrentUserId() async {
     try {
       models.User user = await account.get();
@@ -143,7 +189,7 @@ class AppwriteService {
     }
   }
 
-  // **7️⃣ Get Image URL from File ID**
+  // **9️⃣ Get Image URL from File ID**
   static String getImageUrl(String fileId) {
     return 'https://cloud.appwrite.io/v1/storage/buckets/67b78e8a000a2b7b43fd/files/$fileId/view?project=67aa277600042d235f09';
   }

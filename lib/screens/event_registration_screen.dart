@@ -70,19 +70,25 @@ class _EventRegistrationScreenState extends State<EventRegistrationScreen> {
     }
   }
 
-  Future<void> _selectDate() async {
-    DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-    );
-    if (picked != null) {
-      setState(() {
-        _eventDateController.text = picked.toIso8601String().split('T').first;
+final List<Map<String, String>> _selectedDateRanges = []; // Store selected date ranges
+
+Future<void> _selectDateRange() async {
+  DateTimeRange? picked = await showDateRangePicker(
+    context: context,
+    firstDate: DateTime(2020),
+    lastDate: DateTime(2030),
+  );
+
+  if (picked != null) {
+    setState(() {
+      _selectedDateRanges.add({
+        "from": picked.start.toIso8601String().split('T').first,
+        "to": picked.end.toIso8601String().split('T').first,
       });
-    }
+    });
   }
+}
+
 
 void _submitRegistration() async {
   if (_formKey.currentState!.validate()) {
@@ -138,11 +144,19 @@ void _showRegistrationSuccessDialog() {
   );
 }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Register for Event')),
-      body: SingleChildScrollView(
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(title: const Text('Register for Event')),
+    body: Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.white, Colors.teal], // White-to-Teal gradient
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
@@ -150,7 +164,6 @@ void _showRegistrationSuccessDialog() {
             children: [
               _buildTextField(_nameController, 'Your Name'), 
               _buildDropdownField('Select Batch', _batch, _selectedBatch, (val) => setState(() => _selectedBatch = val)),
-             // _buildTextField(_batchController, 'Batch'),
               _buildDropdownField('Select Department', _departments, _selectedDepartment, (val) => setState(() => _selectedDepartment = val)),
               _buildDropdownField('Select Category', _eventCategories, _selectedCategory, (val) => setState(() => _selectedCategory = val)),
               _buildTextField(_eventNameController, 'Event Name'),
@@ -170,8 +183,9 @@ void _showRegistrationSuccessDialog() {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildTextField(TextEditingController controller, String label) {
     return Padding(
@@ -197,24 +211,43 @@ void _showRegistrationSuccessDialog() {
     );
   }
 
-  Widget _buildDatePickerField() {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: TextFormField(
-        controller: _eventDateController,
+Widget _buildDatePickerField() {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      TextFormField(
         decoration: InputDecoration(
-          labelText: 'Event Date (YYYY-MM-DD)',
+          labelText: 'Select Event Date Range',
           border: OutlineInputBorder(),
           suffixIcon: IconButton(
             icon: const Icon(Icons.calendar_today),
-            onPressed: _selectDate,
+            onPressed: _selectDateRange, // Updated function
           ),
         ),
         readOnly: true,
-        validator: (value) => value!.isEmpty ? 'Please select an event date' : null,
+        validator: (value) => _selectedDateRanges.isEmpty ? 'Please select at least one event date range' : null,
       ),
-    );
-  }
+      const SizedBox(height: 10),
+      ..._selectedDateRanges.map((range) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("📅 ${range["from"]} → ${range["to"]}"),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () {
+                    setState(() {
+                      _selectedDateRanges.remove(range);
+                    });
+                  },
+                ),
+              ],
+            ),
+          )),
+    ],
+  );
+}
 
   Widget _buildImagePicker() {
     return GestureDetector(

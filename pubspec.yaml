@@ -19,6 +19,11 @@ dependencies:
   animated_background: ^2.0.0
   appwrite: ^14.0.0
   flutter_secure_storage: ^9.0.0  # Optional for secure storage
+  carousel_slider: ^5.0.0
+  flip_card: ^0.7.0
+  multi_date_picker: 0.0.1-beta.1
+  flutter_card_swiper: ^7.0.2
+  google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:

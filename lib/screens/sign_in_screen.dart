@@ -41,21 +41,21 @@ Future<void> _signUp() async {
   });
 
   try {
-    // 1️⃣ Create User Account (This automatically logs in the user)
+    //  Create User Account (This automatically logs in the user)
     final User newUser = await account.create(
       userId: ID.unique(),
       email: _emailController.text,
       password: _passwordController.text,
     );
-    print("✅ User Created: ${newUser.$id}");
+    print(" User Created: ${newUser.$id}");
 
-    // 2️⃣ No need to create a session manually!
+    //  No need to create a session manually!
 
-    // 3️⃣ Fetch the authenticated user (they are already logged in)
+    //  Fetch the authenticated user (they are already logged in)
     final User loggedInUser = await account.get();
-    print("✅ Logged In User: ${loggedInUser.$id}");
+    print(" Logged In User: ${loggedInUser.$id}");
 
-    // 4️⃣ Create Document with Correct Permissions
+    //  Create Document with Correct Permissions
     await databases.createDocument(
       databaseId: '67aa2889002cd582ca1c',
       collectionId: '67aa28a80008eb0d3bda',
@@ -73,9 +73,9 @@ Future<void> _signUp() async {
 ],
 
     );
-    print("✅ Document Created Successfully");
+    print(" Document Created Successfully");
 
-    // 5️⃣ Show Success Message & Navigate to Login Screen
+    // 5️ Show Success Message & Navigate to Login Screen
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Sign-up successful! Please log in.')),
     );
@@ -87,12 +87,12 @@ Future<void> _signUp() async {
       MaterialPageRoute(builder: (context) => LoginScreen()),
     );
   } on AppwriteException catch (e) {
-    print("❌ Appwrite Exception: ${e.message}");
+    print(" Appwrite Exception: ${e.message}");
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Sign-up failed: ${e.message}')),
     );
   } catch (e) {
-    print("❌ Unexpected Error: $e");
+    print(" Unexpected Error: $e");
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('An unexpected error occurred. Please try again.')),
     );

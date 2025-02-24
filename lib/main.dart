@@ -7,7 +7,6 @@ import 'screens/event_details_screen.dart';
 import 'screens/event_registration_screen.dart';
 import 'screens/add_event_screen.dart';
 import 'screens/admin_dashboard_screen.dart';
-import 'screens/admin_login_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized(); 
@@ -34,14 +33,14 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-        '/': (context) => SplashScreen(),
+        '/': (context) => AdminDashboardScreen(), // SplashScreen(),
         '/login': (context) => const LoginScreen(),
         '/sign_in': (context) => SignInScreen(),
         '/event_details': (context) => const EventDetailsScreen(),
         '/event_registration': (context) => const EventRegistrationScreen(),
-        '/add_event': (context) => AddEventScreen(),
-        '/admin_dashboard': (context) => const AdminDashboardScreen(),
-        '/admin_login': (context) => AdminLoginScreen(),
+        // '/add_event': (context) => AddEventScreen(),
+        '/admin_dashboard': (context) =>  AdminDashboardScreen(),
+        
       },
     );
   }

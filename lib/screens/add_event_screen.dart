@@ -1,80 +1,132 @@
 import 'package:flutter/material.dart';
+import 'package:new_event/services/appwrite_service.dart';
 
-class AddEventScreen extends StatelessWidget {
-  AddEventScreen({super.key});
+class AddEventScreen extends StatefulWidget {
+  final Map<String, dynamic>? event;
+
+  const AddEventScreen({super.key, this.event});
+
+  @override
+  _AddEventScreenState createState() => _AddEventScreenState();
+}
+
+class _AddEventScreenState extends State<AddEventScreen> {
+  final TextEditingController eventNameController = TextEditingController();
+  final TextEditingController organizerController = TextEditingController();
+  final TextEditingController departmentController = TextEditingController();
+  final TextEditingController batchController = TextEditingController();
+  final TextEditingController dateController = TextEditingController();
+  final TextEditingController venueController = TextEditingController();
+  String? imageUrl;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Pre-fill fields if event data exists
+    if (widget.event != null) {
+      eventNameController.text = widget.event!['event_name'] ?? '';
+      organizerController.text = widget.event!['name'] ?? '';
+      departmentController.text = widget.event!['department'] ?? '';
+      batchController.text = widget.event!['batch'] ?? '';
+      dateController.text = widget.event!['event_date'] ?? '';
+      venueController.text = widget.event!['event_venue'] ?? '';
+      imageUrl = widget.event!['image_url'];
+    }
+  }
+
+  void verifyEvent() async {
+    if (widget.event == null || widget.event!['\$id'] == null) return;
+
+    bool success = await AppwriteService.verifyEvent(widget.event!['\$id']); // ✅ Use `\$id` for Appwrite document ID
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Event verified successfully!")),
+      );
+      Navigator.pop(context, true); // ✅ Return `true` to refresh admin dashboard
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Failed to verify event")),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Add New Event',
-          style: TextStyle(
-            color: Colors.white, // Make the text white for visibility
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: Colors.transparent, // Make AppBar transparent
-        elevation: 0, // Remove shadow of AppBar
-      ),
-      extendBodyBehindAppBar: true, // Allow body to extend behind AppBar
-      body: SizedBox(
-        width: double.infinity,
-        height: double.infinity, // Ensure full height
-        child: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Color.fromARGB(255, 122, 17, 17), // Dark Red
-                Color.fromARGB(255, 172, 49, 49), // Light Red
-              ],
-            ),
-          ),
-          child: Stack(
-            children: [
-              // Custom shapes added to the background
-              Positioned.fill(
-                child: CustomPaint(
-                  painter: BackgroundShapesPainter(),
+      appBar: AppBar(title: const Text('Verify Event')),
+      body: SingleChildScrollView( // ✅ Prevents UI overflow
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Event Image (if available)
+            if (imageUrl != null && imageUrl!.trim().isNotEmpty)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  imageUrl!,
+                  width: double.infinity,
+                  height: 300,
+                  fit: BoxFit.cover,
                 ),
+              )
+            else
+              const Center(
+                child: Icon(Icons.image_not_supported, size: 150, color: Colors.grey),
               ),
-            ],
-          ),
+
+            const SizedBox(height: 20),
+
+            // Event Details (Read-Only)
+            TextField(
+              controller: eventNameController,
+              decoration: const InputDecoration(labelText: 'Event Name'),
+              readOnly: true,
+            ),
+            TextField(
+              controller: organizerController,
+              decoration: const InputDecoration(labelText: 'Organizer'),
+              readOnly: true,
+            ),
+            TextField(
+              controller: departmentController,
+              decoration: const InputDecoration(labelText: 'Department'),
+              readOnly: true,
+            ),
+            TextField(
+              controller: batchController,
+              decoration: const InputDecoration(labelText: 'Batch'),
+              readOnly: true,
+            ),
+            TextField(
+              controller: dateController,
+              decoration: const InputDecoration(labelText: 'Date'),
+              readOnly: true,
+            ),
+            TextField(
+              controller: venueController,
+              decoration: const InputDecoration(labelText: 'Venue'),
+              readOnly: true,
+            ),
+
+            const SizedBox(height: 20),
+
+            // Verify Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: verifyEvent,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: const Text("Verify Event", style: TextStyle(fontSize: 18, color: Colors.white)),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
-}
-
-// Custom painter to draw geometric shapes (circles, squares, triangles)
-class BackgroundShapesPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint paint = Paint()
-      ..style = PaintingStyle.fill
-      ..color = const Color.fromARGB(255, 244, 68, 68).withOpacity(0.2); // Light blue color for shapes
-
-    // Draw circles
-    canvas.drawCircle(Offset(size.width * 0.3, size.height * 0.2), 100, paint);
-    canvas.drawCircle(Offset(size.width * 0.7, size.height * 0.6), 80, paint);
-
-    // Draw squares
-    paint.color = const Color.fromARGB(255, 99, 38, 38).withOpacity(0.2); // Different color for squares
-    canvas.drawRect(Rect.fromCircle(center: Offset(size.width * 0.5, size.height * 0.4), radius: 1000), paint);
-
-    // Draw triangles
-    paint.color = const Color.fromARGB(255, 238, 129, 129).withOpacity(0.2); // Different color for triangles
-    Path trianglePath = Path()
-      ..moveTo(size.width * 0.1, size.height * 0.8)
-      ..lineTo(size.width * 0.2, size.height * 0.9)
-      ..lineTo(size.width * 0.0, size.height * 0.9)
-      ..close();
-    canvas.drawPath(trianglePath, paint);
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

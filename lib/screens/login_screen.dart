@@ -64,7 +64,7 @@ Future<void> _handleLogin() async {
     } else {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const EventDetailsScreen()),
+        MaterialPageRoute(builder: (context) =>  EventDetailsScreen()),
       );
     }
   } on AppwriteException catch (e) {

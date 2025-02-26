@@ -9,9 +9,14 @@ class AppwriteService {
 
   static final Account account = Account(client);
   static final Databases databases = Databases(client);
-  static final Storage storage = Storage(client); // Storage service
+  static final Storage storage = Storage(client);
 
-  // **1️⃣ Sign Up Method**
+  static const String databaseId = '67aa2889002cd582ca1c';
+  static const String userCollectionId = '67aa28a80008eb0d3bda';
+  static const String eventCollectionId = '67b78ecb001e8c2ac03d';
+  static const String bucketId = '67b78e8a000a2b7b43fd';
+
+  /// **1️⃣ Sign Up Method**
   static Future<String?> signUp({
     required String name,
     required String studentId,
@@ -24,11 +29,14 @@ class AppwriteService {
         userId: ID.unique(),
         email: email,
         password: password,
+        name: name,
       );
 
+      await account.createEmailPasswordSession(email: email, password: password);
+
       await databases.createDocument(
-        databaseId: '67aa2889002cd582ca1c',
-        collectionId: '67aa28a80008eb0d3bda',
+        databaseId: databaseId,
+        collectionId: userCollectionId,
         documentId: user.$id,
         data: {
           'name': name,
@@ -39,61 +47,55 @@ class AppwriteService {
         },
       );
 
+      print("✅ User signed up and logged in.");
       return null; // Success
     } catch (e) {
-      print('SignUp Error: $e');
-      return e.toString(); // Return error
-    }
-  }
-
-  // **2️⃣ Login Method**
-  static Future<String?> login({required String email, required String password}) async {
-    try {
-      await account.createEmailPasswordSession(email: email, password: password);
-
-      // Verify session creation
-      models.User user = await account.get();
-      print("✅ Login Successful: ${user.$id}");
-
-      return null; // Success
-    } on AppwriteException catch (e) {
-      print('Login Error: ${e.message}');
-      return e.message;
-    } catch (e) {
-      print('Unexpected Login Error: $e');
+      print('❌ SignUp Error: $e');
       return e.toString();
     }
   }
 
-  // **3️⃣ Logout Method**
+  /// **2️⃣ Login Method**
+  static Future<String?> login({required String email, required String password}) async {
+    try {
+      await account.createEmailPasswordSession(email: email, password: password);
+      models.User user = await account.get();
+      print("✅ Login Successful: ${user.$id}");
+      return null;
+    } catch (e) {
+      print('❌ Login Error: $e');
+      return e.toString();
+    }
+  }
+
+  /// **3️⃣ Logout Method**
   static Future<void> logout() async {
     try {
       await account.deleteSessions();
       print("✅ User successfully logged out.");
-    } on AppwriteException catch (e) {
-      print('Logout Error: ${e.message}');
     } catch (e) {
-      print('Unexpected Logout Error: $e');
+      print('❌ Logout Error: $e');
     }
   }
 
-  // **4️⃣ Upload Image to Appwrite Storage (Store File ID, Not URL)**
+  /// **4️⃣ Upload Image to Appwrite Storage**
   static Future<String?> uploadEventImage(File imageFile) async {
     try {
       final response = await storage.createFile(
-        bucketId: '67b78e8a000a2b7b43fd', // Your bucket ID
+        bucketId: bucketId,
         fileId: ID.unique(),
         file: InputFile.fromPath(path: imageFile.path),
       );
 
-      return response.$id; // Store file ID
+      print('✅ Uploaded Image File ID: ${response.$id}');
+      return response.$id;
     } catch (e) {
-      print('Error uploading image: $e');
+      print('❌ Image Upload Error: $e');
       return null;
     }
   }
 
-  // **5️⃣ Register Event (Store File ID Instead of URL)**
+  /// **5️⃣ Register Event**
   static Future<String?> registerEvent({
     required String name,
     required String batch,
@@ -103,7 +105,7 @@ class AppwriteService {
     required String eventPurpose,
     required String eventDate,
     required String eventVenue,
-    required File? eventImage, // Image file
+    required File? eventImage,
   }) async {
     try {
       String? userId = await getCurrentUserId();
@@ -111,7 +113,6 @@ class AppwriteService {
         return 'User not logged in';
       }
 
-      // Upload image if provided
       String? fileId;
       if (eventImage != null) {
         fileId = await uploadEventImage(eventImage);
@@ -119,8 +120,8 @@ class AppwriteService {
       }
 
       await databases.createDocument(
-        databaseId: '67aa2889002cd582ca1c', // Your database ID
-        collectionId: '67b78ecb001e8c2ac03d', // Your collection ID
+        databaseId: databaseId,
+        collectionId: eventCollectionId,
         documentId: ID.unique(),
         data: {
           'userId': userId,
@@ -132,65 +133,154 @@ class AppwriteService {
           'event_purpose': eventPurpose,
           'event_date': eventDate,
           'event_venue': eventVenue,
-          'event_image_id': fileId, // Store file ID instead of full URL
-          'is_verified': false, // Add verification flag (default: false)
+          'event_image_id': fileId,
+          'is_verified': false, // Default to false
         },
       );
 
-      return null; // Success
+      print("✅ Event Registered Successfully.");
+      return null;
     } catch (e) {
-      print('Register Event Error: $e');
-      return e.toString(); // Return error
+      print('❌ Register Event Error: $e');
+      return e.toString();
     }
   }
 
-  // **6️⃣ Get Event Registrations for Admin Dashboard**
-// **8️⃣ Fetch Event Registrations for Admin Dashboard**
-static Future<List<Map<String, dynamic>>> getEventRegistrations() async {
-  try {
-    final response = await databases.listDocuments(
-      databaseId: '67aa2889002cd582ca1c', // Your database ID
-      collectionId: '67b78ecb001e8c2ac03d', // Your event registrations collection ID
-    );
+  /// **6️⃣ Get Event Registrations**
+  static Future<List<Map<String, dynamic>>> getEventRegistrations() async {
+    try {
+      final response = await databases.listDocuments(
+        databaseId: databaseId,
+        collectionId: eventCollectionId,
+      );
 
-    return response.documents.map((doc) => doc.data).toList();
-  } catch (e) {
-    print('Error fetching event registrations: $e');
-    return [];
+      return response.documents.map((doc) {
+        final data = Map<String, dynamic>.from(doc.data);
+
+        data['image_url'] = data['event_image_id'] != null
+            ? getImageUrl(data['event_image_id'])
+            : null;
+
+        return data;
+      }).toList();
+    } catch (e) {
+      print('❌ Fetch Event Registrations Error: $e');
+      return [];
+    }
   }
-}
 
-  // **7️⃣ Verify Event Registration (Admin)**
+  /// **7️⃣ Get Verified Events Only**
+  static Future<List<Map<String, dynamic>>> getVerifiedEvents() async {
+    try {
+      final response = await databases.listDocuments(
+        databaseId: databaseId,
+        collectionId: eventCollectionId,
+        queries: [Query.equal('is_verified', true)],
+      );
+
+      return response.documents.map((doc) {
+        final data = Map<String, dynamic>.from(doc.data);
+        data['image_url'] = data['event_image_id'] != null
+            ? getImageUrl(data['event_image_id'])
+            : null;
+        return data;
+      }).toList();
+    } catch (e) {
+      print('❌ Fetch Verified Events Error: $e');
+      return [];
+    }
+  }
+
+  /// **8️⃣ Verify Event**
   static Future<bool> verifyEvent(String documentId) async {
     try {
       await databases.updateDocument(
-        databaseId: '67aa2889002cd582ca1c',
-        collectionId: '67b78ecb001e8c2ac03d',
+        databaseId: databaseId,
+        collectionId: eventCollectionId,
         documentId: documentId,
-        data: {'is_verified': true}, // Mark event as verified
+        data: {'is_verified': true},
       );
 
       print('✅ Event verified successfully.');
       return true;
     } catch (e) {
-      print('Error verifying event: $e');
+      print('❌ Verify Event Error: $e');
       return false;
     }
   }
 
-  // **8️⃣ Get Current User ID**
+  /// **9️⃣ Delete an Event**
+  static Future<bool> deleteEvent(String documentId) async {
+    try {
+      await databases.deleteDocument(
+        databaseId: databaseId,
+        collectionId: eventCollectionId,
+        documentId: documentId,
+      );
+      print('✅ Event deleted successfully.');
+      return true;
+    } catch (e) {
+      print('❌ Delete Event Error: $e');
+      return false;
+    }
+  }
+
+  /// **🔟 Update Event Details**
+  static Future<bool> updateEvent(String documentId, Map<String, dynamic> updatedData) async {
+    try {
+      await databases.updateDocument(
+        databaseId: databaseId,
+        collectionId: eventCollectionId,
+        documentId: documentId,
+        data: updatedData,
+      );
+      print('✅ Event updated successfully.');
+      return true;
+    } catch (e) {
+      print('❌ Update Event Error: $e');
+      return false;
+    }
+  }
+
+  /// **🔹 Check if a Date is Today**
+  static bool isToday(String date) {
+    final eventDate = DateTime.parse(date);
+    final today = DateTime.now();
+    return eventDate.year == today.year &&
+        eventDate.month == today.month &&
+        eventDate.day == today.day;
+  }
+
+  /// **Get Current User ID**
   static Future<String?> getCurrentUserId() async {
     try {
       models.User user = await account.get();
-      return user.$id;
+      return user.$id; // User ID
     } catch (e) {
-      print('Error getting user ID: $e');
+      print('❌ Error fetching current user ID: $e');
       return null;
     }
   }
 
-  // **9️⃣ Get Image URL from File ID**
+
+    // Fetch current user details
+  static Future<Map<String, dynamic>?> getCurrentUserDetails() async {
+    try {
+      models.User user = await account.get();
+      return {
+        'id': user.$id,
+        'name': user.name,
+        'email': user.email,
+      };
+    } catch (e) {
+      print("Error fetching user details: $e");
+      return null;
+    }
+  }
+
+
+  /// **🔹 Get Image URL from File ID**
   static String getImageUrl(String fileId) {
-    return 'https://cloud.appwrite.io/v1/storage/buckets/67b78e8a000a2b7b43fd/files/$fileId/view?project=67aa277600042d235f09';
+    return 'https://cloud.appwrite.io/v1/storage/buckets/$bucketId/files/$fileId/view?project=67aa277600042d235f09';
   }
 }

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+  import 'package:flutter/material.dart';
 //import 'package:new_event/services/appwrite_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
@@ -33,15 +33,16 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-        '/': (context) => AdminDashboardScreen(), // SplashScreen(),
+        '/': (context) => SplashScreen(), //  EventDetailsScreen(), //       AdminDashboardScreen(), // 
         '/login': (context) => const LoginScreen(),
         '/sign_in': (context) => SignInScreen(),
-        '/event_details': (context) => const EventDetailsScreen(),
+        '/event_details': (context) =>  EventDetailsScreen(),
         '/event_registration': (context) => const EventRegistrationScreen(),
-        // '/add_event': (context) => AddEventScreen(),
+         '/add_event': (context) => AddEventScreen(),
         '/admin_dashboard': (context) =>  AdminDashboardScreen(),
         
       },
     );
   }
 }
+ 

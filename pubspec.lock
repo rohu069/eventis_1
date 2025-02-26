@@ -186,10 +186,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_card_swiper
-      sha256: "1eacbfab31b572223042e03409726553aec431abe48af48c8d591d376d070d3d"
+      sha256: "024ba0fbce670eb7f71fa5aaf137de32017f2503fa05260a8e0a872e075a88c6"
       url: "https://pub.dev"
     source: hosted
-    version: "7.0.2"
+    version: "6.1.0"
   flutter_lints:
     dependency: "direct dev"
     description:

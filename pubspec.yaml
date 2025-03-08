@@ -21,9 +21,10 @@ dependencies:
   flutter_secure_storage: ^9.0.0  # Optional for secure storage
   carousel_slider: ^5.0.0
   flip_card: ^0.7.0
-  multi_date_picker: ^0.0.1-beta.
+  
   flutter_card_swiper: ^6.0.0  # Adjust version if needed
   google_fonts: ^6.1.0
+  multi_date_picker: ^0.0.1-beta.1
 
 dev_dependencies:
   flutter_test:
@@ -35,3 +36,16 @@ flutter:
   assets:
     - assets/logo.png
     - assets/Untitleddesign.png
+    - assets/Black and White Metallic Tech Talk Event Poster.jpeg
+    - assets/Cartel De Inteligencia Artificial Azul _ Plantilla PSD Descarga Gratuita - Pikbest.jpeg
+    - assets/College.jpeg
+    - assets/download (1).jpeg
+    - assets/download.jpeg
+    - assets/Free Vector _ Gaming design template.jpeg
+    - assets/Futuristic Educational Technology Exhibition Poster.jpeg
+    - assets/Premium Vector _ Flat prom vertical flyer template.jpeg
+    - assets/Technology Flyer Template.jpeg
+    - assets/robot_poster.jpeg
+    - assets/Tech Seminar Corporate Flyer Template.jpeg
+
+

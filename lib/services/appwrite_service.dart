@@ -147,27 +147,26 @@ class AppwriteService {
   }
 
   /// **6️⃣ Get Event Registrations**
-  static Future<List<Map<String, dynamic>>> getEventRegistrations() async {
-    try {
-      final response = await databases.listDocuments(
-        databaseId: databaseId,
-        collectionId: eventCollectionId,
-      );
+static Future<List<Map<String, dynamic>>> getEventRegistrations() async {
+  try {
+    final response = await databases.listDocuments(
+      databaseId: databaseId,
+      collectionId: eventCollectionId,
+      queries: [Query.equal('is_verified', false)], // Only fetch unverified events
+    );
 
-      return response.documents.map((doc) {
-        final data = Map<String, dynamic>.from(doc.data);
-
-        data['image_url'] = data['event_image_id'] != null
-            ? getImageUrl(data['event_image_id'])
-            : null;
-
-        return data;
-      }).toList();
-    } catch (e) {
-      print('❌ Fetch Event Registrations Error: $e');
-      return [];
-    }
+    return response.documents.map((doc) {
+      final data = Map<String, dynamic>.from(doc.data);
+      data['image_url'] = data['event_image_id'] != null
+          ? getImageUrl(data['event_image_id'])
+          : null;
+      return data;
+    }).toList();
+  } catch (e) {
+    print('❌ Fetch Event Registrations Error: $e');
+    return [];
   }
+}
 
   /// **7️⃣ Get Verified Events Only**
   static Future<List<Map<String, dynamic>>> getVerifiedEvents() async {

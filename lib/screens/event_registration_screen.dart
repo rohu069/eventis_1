@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:new_event/screens/event_details_screen.dart';
 import 'package:new_event/services/appwrite_service.dart';
+import 'package:intl/intl.dart';
+
 
 class EventRegistrationScreen extends StatefulWidget {
   const EventRegistrationScreen({super.key});
@@ -14,9 +16,7 @@ class EventRegistrationScreen extends StatefulWidget {
 class _EventRegistrationScreenState extends State<EventRegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Controllers for input fields
   final _nameController = TextEditingController();
-  //final _batchController = TextEditingController();
   final _eventPurposeController = TextEditingController();
   final _eventNameController = TextEditingController();
   final _eventDateController = TextEditingController();
@@ -30,14 +30,8 @@ class _EventRegistrationScreenState extends State<EventRegistrationScreen> {
   bool _isSubmitting = false;
 
   final List<String> _batch = [
-      ' semester 1',
- 'semester 2',
-'semester 3',
- 'semester 4',
- 'semester 5',
- 'semester 6',
- 'semester 7',
- 'semester 8'
+    'Semester 1', 'Semester 2', 'Semester 3', 'Semester 4',
+    'Semester 5', 'Semester 6', 'Semester 7', 'Semester 8'
   ];
 
   final List<String> _eventCategories = [
@@ -53,7 +47,6 @@ class _EventRegistrationScreenState extends State<EventRegistrationScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    //_batchController.dispose();
     _eventPurposeController.dispose();
     _eventNameController.dispose();
     _eventDateController.dispose();
@@ -70,34 +63,19 @@ class _EventRegistrationScreenState extends State<EventRegistrationScreen> {
     }
   }
 
-final List<Map<String, String>> _selectedDateRanges = []; // Store selected date ranges
+  Future<void> _submitRegistration() async {
+    if (!_formKey.currentState!.validate()) return;
 
-Future<void> _selectDateRange() async {
-  DateTimeRange? picked = await showDateRangePicker(
-    context: context,
-    firstDate: DateTime(2020),
-    lastDate: DateTime(2030),
-  );
-
-  if (picked != null) {
-    setState(() {
-      _selectedDateRanges.add({
-        "from": picked.start.toIso8601String().split('T').first,
-        "to": picked.end.toIso8601String().split('T').first,
-      });
-    });
-  }
-}
-
-
-void _submitRegistration() async {
-  if (_formKey.currentState!.validate()) {
     if (_image == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select an image')),
       );
       return;
     }
+
+    setState(() {
+      _isSubmitting = true;
+    });
 
     String? errorMessage = await AppwriteService.registerEvent(
       name: _nameController.text,
@@ -111,58 +89,54 @@ void _submitRegistration() async {
       eventImage: _image!,
     );
 
+    if (!mounted) return;
+
+    setState(() {
+      _isSubmitting = false;
+    });
+
     if (errorMessage == null) {
-      _showRegistrationSuccessDialog(); // Show success dialog first
+      _showRegistrationSuccessDialog();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(errorMessage)),
       );
     }
   }
-}
 
-// ✅ Only keep this function and remove any previous _showSuccessDialog function
-void _showRegistrationSuccessDialog() {
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Registration Successful'),
-      content: const Text('You have successfully registered for the event.'),
-      actions: [
-        TextButton(
-          onPressed: () {
-            Navigator.pop(context); // Close the dialog first
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => EventDetailsScreen()),
-            ); // Navigate to EventDetailsScreen after closing the dialog
-          },
-          child: const Text('OK'),
-        ),
-      ],
-    ),
-  );
-}
-
-@override
-Widget build(BuildContext context) {
-  return Scaffold(
-    appBar: AppBar(title: const Text('Register for Event')),
-    body: Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.white, Colors.teal], // White-to-Teal gradient
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
+  void _showRegistrationSuccessDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Registration Successful'),
+        content: const Text('You have successfully registered for the event.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => EventDetailsScreen()),
+              );
+            },
+            child: const Text('OK'),
+          ),
+        ],
       ),
-      child: SingleChildScrollView(
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Register for Event')),
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: Column(
             children: [
-              _buildTextField(_nameController, 'Your Name'), 
+              _buildTextField(_nameController, 'Your Name'),
               _buildDropdownField('Select Batch', _batch, _selectedBatch, (val) => setState(() => _selectedBatch = val)),
               _buildDropdownField('Select Department', _departments, _selectedDepartment, (val) => setState(() => _selectedDepartment = val)),
               _buildDropdownField('Select Category', _eventCategories, _selectedCategory, (val) => setState(() => _selectedCategory = val)),
@@ -183,9 +157,8 @@ Widget build(BuildContext context) {
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildTextField(TextEditingController controller, String label) {
     return Padding(
@@ -198,13 +171,16 @@ Widget build(BuildContext context) {
     );
   }
 
-  Widget _buildDropdownField(String label, List<String> items, String? value, ValueChanged<String?> onChanged) {
+  /// ✅ **Fix: Dropdown Field Method**
+  Widget _buildDropdownField(String label, List<String> options, String? selectedValue, Function(String?) onChanged) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: DropdownButtonFormField<String>(
-        value: value,
         decoration: InputDecoration(labelText: label, border: OutlineInputBorder()),
-        items: items.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
+        value: selectedValue,
+        items: options.map((option) {
+          return DropdownMenuItem(value: option, child: Text(option));
+        }).toList(),
         onChanged: onChanged,
         validator: (value) => value == null ? 'Please select $label' : null,
       ),
@@ -216,37 +192,39 @@ Widget _buildDatePickerField() {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       TextFormField(
+        controller: _eventDateController, // Controller for selected date
         decoration: InputDecoration(
           labelText: 'Select Event Date Range',
           border: OutlineInputBorder(),
           suffixIcon: IconButton(
             icon: const Icon(Icons.calendar_today),
-            onPressed: _selectDateRange, // Updated function
+            onPressed: _pickDateRange, // Open date range picker
           ),
         ),
         readOnly: true,
-        validator: (value) => _selectedDateRanges.isEmpty ? 'Please select at least one event date range' : null,
+        validator: (value) => value!.isEmpty ? 'Please select a date range' : null,
       ),
-      const SizedBox(height: 10),
-      ..._selectedDateRanges.map((range) => Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text("📅 ${range["from"]} → ${range["to"]}"),
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () {
-                    setState(() {
-                      _selectedDateRanges.remove(range);
-                    });
-                  },
-                ),
-              ],
-            ),
-          )),
+      const SizedBox(height: 16), // Add spacing below the date field
     ],
   );
+}
+
+Future<void> _pickDateRange() async {
+  DateTimeRange? picked = await showDateRangePicker(
+    context: context,
+    firstDate: DateTime(2020),
+    lastDate: DateTime(2030),
+  );
+
+  if (picked != null) {
+    setState(() {
+      // Format dates to "YYYY-MM-DD" and update text field
+      String startDate = DateFormat('yyyy-MM-dd').format(picked.start);
+      String endDate = DateFormat('yyyy-MM-dd').format(picked.end);
+
+      _eventDateController.text = "$startDate → $endDate"; // Set formatted text
+    });
+  }
 }
 
   Widget _buildImagePicker() {
@@ -260,18 +238,8 @@ Widget _buildDatePickerField() {
           borderRadius: BorderRadius.circular(8),
         ),
         child: _image == null
-            ? const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.add_a_photo, size: 40, color: Colors.grey),
-                  SizedBox(height: 8),
-                  Text('Tap to pick an image', style: TextStyle(color: Colors.grey)),
-                ],
-              )
-            : ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.file(_image!, fit: BoxFit.cover),
-              ),
+            ? const Center(child: Text('Tap to pick an image'))
+            : Image.file(_image!, fit: BoxFit.cover),
       ),
     );
   }

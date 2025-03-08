@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flip_card/flip_card.dart';
+import 'package:new_event/screens/EventFullDetailsScreen.dart';
 import 'package:new_event/services/appwrite_service.dart';
 import 'package:new_event/screens/event_registration_screen.dart';
+
+
 
 class EventDetailsScreen extends StatefulWidget {
   @override
@@ -225,8 +228,14 @@ Future<void> fetchUserDetails() async {
                               trailing: const Icon(Icons.arrow_forward_ios,
                                   size: 18),
                               onTap: () {
-                                // Navigate to event details page if needed
-                              },
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => EventFullDetailsScreen(event: event),
+    ),
+  );
+},
+
                             ),
                           );
                         },

@@ -33,8 +33,8 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-        '/': (context) => EventDetailsScreen(),
-        '/login': (context) => const LoginScreen(),
+        '/': (context) => LoginScreen(), // SplashScreen(), // EventDetailsScreen(), // AdminDashboardScreen(), //   EventRegistrationScreen(),//  
+       '/login': (context) =>  LoginScreen(),
         '/sign_in': (context) => SignInScreen(),
         '/event_details': (context) =>  EventDetailsScreen(),
         '/event_registration': (context) => const EventRegistrationScreen(),

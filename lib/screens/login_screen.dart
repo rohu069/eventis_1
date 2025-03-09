@@ -77,12 +77,22 @@ Future<void> _handleLogin() async {
 }
 
   // Navigate to Sign Up page
-  void _navigateToSignUp() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => SignInScreen()),
-    );
-  }
+void _navigateToSignUp() {
+  Navigator.push(
+    context,
+    PageRouteBuilder(
+      transitionDuration: const Duration(milliseconds: 500),
+      pageBuilder: (context, animation, secondaryAnimation) => SignInScreen(),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: animation,
+          child: child,
+        );
+      },
+    ),
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -90,9 +100,10 @@ Future<void> _handleLogin() async {
       body: Container(
         decoration: BoxDecoration(
           image: const DecorationImage(
-            image: AssetImage('assets/Untitleddesign.png'),
-            fit: BoxFit.cover,
-          ),
+  image: NetworkImage('https://images.unsplash.com/photo-1503602642458-232111445657?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=bf884ad570b50659c5fa2dc2cfb20ecf&auto=format&fit=crop&w=1000&q=100'),
+  fit: BoxFit.cover,
+),
+
           gradient: const LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,

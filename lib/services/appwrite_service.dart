@@ -95,7 +95,7 @@ class AppwriteService {
     }
   }
 
-  /// **5️⃣ Register Event**
+  /// **5️⃣ Register Event with Additional Data**
   static Future<String?> registerEvent({
     required String name,
     required String batch,
@@ -104,7 +104,7 @@ class AppwriteService {
     required String eventName,
     required String eventPurpose,
     required String eventDate,
-    required String eventVenue,
+    required String eventVenue,// New field for location
     required File? eventImage,
   }) async {
     try {
@@ -146,29 +146,36 @@ class AppwriteService {
     }
   }
 
-  /// **6️⃣ Get Event Registrations**
-static Future<List<Map<String, dynamic>>> getEventRegistrations() async {
-  try {
-    final response = await databases.listDocuments(
-      databaseId: databaseId,
-      collectionId: eventCollectionId,
-      queries: [Query.equal('is_verified', false)], // Only fetch unverified events
-    );
+  /// **6️⃣ Get Event Registrations with Additional Data**
+  static Future<List<Map<String, dynamic>>> getEventRegistrations() async {
+    try {
+      final response = await databases.listDocuments(
+        databaseId: databaseId,
+        collectionId: eventCollectionId,
+        queries: [Query.equal('is_verified', false)], // Only fetch unverified events
+      );
 
-    return response.documents.map((doc) {
-      final data = Map<String, dynamic>.from(doc.data);
-      data['image_url'] = data['event_image_id'] != null
-          ? getImageUrl(data['event_image_id'])
-          : null;
-      return data;
-    }).toList();
-  } catch (e) {
-    print('❌ Fetch Event Registrations Error: $e');
-    return [];
+      return response.documents.map((doc) {
+        final data = Map<String, dynamic>.from(doc.data);
+
+        // Add additional data here (e.g., event location, start time, etc.)
+        data['image_url'] = data['event_image_id'] != null
+            ? getImageUrl(data['event_image_id'])
+            : null;
+
+        // Example of adding more data from the event document
+        data['event_start_time'] = data['event_start_time'] ?? 'Not Available';
+        data['event_location'] = data['event_location'] ?? 'Not Available';
+        
+        return data;
+      }).toList();
+    } catch (e) {
+      print('❌ Fetch Event Registrations Error: $e');
+      return [];
+    }
   }
-}
 
-  /// **7️⃣ Get Verified Events Only**
+  /// **7️⃣ Get Verified Events with Additional Data**
   static Future<List<Map<String, dynamic>>> getVerifiedEvents() async {
     try {
       final response = await databases.listDocuments(
@@ -179,9 +186,16 @@ static Future<List<Map<String, dynamic>>> getEventRegistrations() async {
 
       return response.documents.map((doc) {
         final data = Map<String, dynamic>.from(doc.data);
+        
+        // Add additional data here (e.g., event location, start time, etc.)
         data['image_url'] = data['event_image_id'] != null
             ? getImageUrl(data['event_image_id'])
             : null;
+
+        // Example of adding more data from the event document
+        data['event_start_time'] = data['event_start_time'] ?? 'Not Available';
+        data['event_location'] = data['event_location'] ?? 'Not Available';
+        
         return data;
       }).toList();
     } catch (e) {
@@ -261,8 +275,7 @@ static Future<List<Map<String, dynamic>>> getEventRegistrations() async {
     }
   }
 
-
-    // Fetch current user details
+  /// Fetch current user details
   static Future<Map<String, dynamic>?> getCurrentUserDetails() async {
     try {
       models.User user = await account.get();
@@ -276,7 +289,6 @@ static Future<List<Map<String, dynamic>>> getEventRegistrations() async {
       return null;
     }
   }
-
 
   /// **🔹 Get Image URL from File ID**
   static String getImageUrl(String fileId) {

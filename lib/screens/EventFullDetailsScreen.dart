@@ -62,11 +62,11 @@ class EventFullDetailsScreen extends StatelessWidget {
               "Venue: ${event["event_venue"]}",
               style: const TextStyle(fontSize: 16),
             ),
-            const SizedBox(height: 16),
             Text(
-              event["event_description"] ?? "No description available",
+              "Event category: ${event["category"]}",
               style: const TextStyle(fontSize: 16),
             ),
+            const SizedBox(height: 16),
           ],
         ),
       ),

@@ -17,6 +17,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
   final TextEditingController batchController = TextEditingController();
   final TextEditingController dateController = TextEditingController();
   final TextEditingController venueController = TextEditingController();
+  final TextEditingController linkController = TextEditingController();
   String? imageUrl;
 
   @override
@@ -31,6 +32,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
       batchController.text = widget.event!['batch'] ?? '';
       dateController.text = widget.event!['event_date'] ?? '';
       venueController.text = widget.event!['event_venue'] ?? '';
+      linkController.text = widget.event!['link'];
       imageUrl = widget.event!['image_url'];
     }
   }
@@ -109,6 +111,11 @@ class _AddEventScreenState extends State<AddEventScreen> {
               decoration: const InputDecoration(labelText: 'Venue'),
               readOnly: true,
             ),
+            TextField(
+              controller: linkController,
+              decoration: const InputDecoration(labelText: 'Regestration link'),
+              readOnly: true,
+            ),            
 
             const SizedBox(height: 20),
 

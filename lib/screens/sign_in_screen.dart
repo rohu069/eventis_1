@@ -156,14 +156,15 @@ Future<void> _signUp() async {
       ),
       body: Stack(
         children: [
-Positioned.fill(
-  child: IgnorePointer(
-    child: Image.network(
-      'https://images.unsplash.com/photo-1503602642458-232111445657?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=bf884ad570b50659c5fa2dc2cfb20ecf&auto=format&fit=crop&w=1000&q=100',
+Container(
+  decoration: BoxDecoration(
+    image: DecorationImage(
+      image: AssetImage('assets/stool.jpg'),
       fit: BoxFit.cover,
     ),
   ),
 ),
+
 
           IgnorePointer(
             child: Container(

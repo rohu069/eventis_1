@@ -26,6 +26,7 @@ dependencies:
   multi_date_picker: ^0.0.1-beta.1
   flutter_animate: ^4.5.2
   cached_network_image: ^3.4.1
+  url_launcher: ^6.1.14
 
 dev_dependencies:
   flutter_test:
@@ -48,5 +49,6 @@ flutter:
     - assets/Technology Flyer Template.jpeg
     - assets/robot_poster.jpeg
     - assets/Tech Seminar Corporate Flyer Template.jpeg
+    - assets/stool.jpg
 
 

@@ -115,6 +115,7 @@ appBar: AppBar(
                   ),
                   Text("Organizer: ${event['name'] ?? 'Unknown'}"),
                   Text("Date: ${event['event_date'] ?? 'Unknown'}"),
+                  Text("Registration Link: ${event['link'] ?? 'unknown'}")
                 ],
               ),
             ),

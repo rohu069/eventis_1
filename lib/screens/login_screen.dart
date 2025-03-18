@@ -88,83 +88,90 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           // Background Image
 Container(
-  decoration: const BoxDecoration(
+  decoration: BoxDecoration(
     image: DecorationImage(
-      image: NetworkImage('https://images.unsplash.com/photo-1503602642458-232111445657?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=bf884ad570b50659c5fa2dc2cfb20ecf&auto=format&fit=crop&w=1000&q=100'),
+      image: AssetImage('assets/stool.jpg'),
       fit: BoxFit.cover,
     ),
   ),
 ),
 
 
+
           // Main Content
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  // Animated Welcome Text
-                  Animate(
-                    effects: [
-                      FadeEffect(duration: 600.ms),
-                      SlideEffect(begin: const Offset(0, -0.5), end: Offset.zero, curve: Curves.easeOut),
-                    ],
-                    child: const Text(
-                      "Welcome Back",
-                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
-                    ),
-                  ),
+Center(
+  child: Padding(
+    padding: const EdgeInsets.all(16.0),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: <Widget>[
+        // Add extra spacing above the welcome text
+        const SizedBox(height: 40), // Increased height to push it up
 
-                  const SizedBox(height: 30),
+        // Animated Welcome Text
+        Animate(
+          effects: [
+            FadeEffect(duration: 600.ms),
+            SlideEffect(begin: const Offset(0, -0.5), end: Offset.zero, curve: Curves.easeOut),
+          ],
+          child: const Text(
+            "Welcome Back",
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+          
+        ),
+        SizedBox(height: 300),
 
-                  // Form Fields
-                  Form(
-                    key: _formKey,
-                    child: Column(
-                      children: [
-                        _buildTextField(_emailController, "Email", false),
-                        const SizedBox(height: 16),
-                        _buildTextField(_passwordController, "Password", true),
-                      ],
-                    ),
-                  ),
 
-                  const SizedBox(height: 20),
 
-                  // Animated Login Button
-                  Animate(
-                    effects: [FadeEffect(duration: 500.ms)],
-                    child: ElevatedButton(
-                      onPressed: _handleLogin,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 15),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: const Text("Log In"),
-                    ),
-                  ),
+        // Form Fields
+        Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              _buildTextField(_emailController, "Email", false),
+              const SizedBox(height: 16),
+              _buildTextField(_passwordController, "Password", true),
+            ],
+          ),
+        ),
 
-                  const SizedBox(height: 16),
+        const SizedBox(height: 20),
 
-                  // Animated Sign-up Text
-                  Animate(
-                    effects: [
-                      FadeEffect(duration: 800.ms, delay: 400.ms),
-                      SlideEffect(begin: const Offset(0, 0.5), end: Offset.zero, curve: Curves.easeOut),
-                    ],
-                    child: TextButton(
-                      onPressed: _navigateToSignUp,
-                      child: const Text(
-                        "Don’t have an account? Sign Up",
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+        // Animated Login Button
+        Animate(
+          effects: [FadeEffect(duration: 500.ms)],
+          child: ElevatedButton(
+            onPressed: _handleLogin,
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 15),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text("Log In"),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Animated Sign-up Text
+        Animate(
+          effects: [
+            FadeEffect(duration: 800.ms, delay: 400.ms),
+            SlideEffect(begin: const Offset(0, 0.5), end: Offset.zero, curve: Curves.easeOut),
+          ],
+          child: TextButton(
+            onPressed: _navigateToSignUp,
+            child: const Text(
+              "Don’t have an account? Sign Up",
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
             ),
           ),
+        ),
+      ],
+    ),
+  ),
+),
+
         ],
       ),
     );

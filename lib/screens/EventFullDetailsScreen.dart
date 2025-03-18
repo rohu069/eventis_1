@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class EventFullDetailsScreen extends StatelessWidget {
   final Map<String, dynamic> event;
@@ -20,6 +21,15 @@ class EventFullDetailsScreen extends StatelessWidget {
       ),
     );
   }
+
+  /// **📌 Open URL in Browser**
+void _launchURL(String url) async {
+  final Uri uri = Uri.parse(url);
+
+  if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+    print('Could not launch $url');
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -67,6 +77,20 @@ class EventFullDetailsScreen extends StatelessWidget {
               style: const TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 16),
+
+            /// **📌 Clickable Registration Link**
+            if (event["link"] != null && event["link"].trim().isNotEmpty)
+              GestureDetector(
+                onTap: () => _launchURL(event["link"]),
+                child: Text(
+                  "Register Here",
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.blue,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
           ],
         ),
       ),

@@ -15,6 +15,7 @@ class AppwriteService {
   static const String userCollectionId = '67aa28a80008eb0d3bda';
   static const String eventCollectionId = '67b78ecb001e8c2ac03d';
   static const String bucketId = '67b78e8a000a2b7b43fd';
+    static const String categoryId = '67cefd76002cba19fc92';
 
   /// **1️⃣ Sign Up Method**
   static Future<String?> signUp({
@@ -106,6 +107,7 @@ class AppwriteService {
     required String eventDate,
     required String eventVenue,// New field for location
     required File? eventImage,
+    required String link,
   }) async {
     try {
       String? userId = await getCurrentUserId();
@@ -135,6 +137,7 @@ class AppwriteService {
           'event_venue': eventVenue,
           'event_image_id': fileId,
           'is_verified': false, // Default to false
+          'link': link,
         },
       );
 
@@ -176,33 +179,40 @@ class AppwriteService {
   }
 
   /// **7️⃣ Get Verified Events with Additional Data**
-  static Future<List<Map<String, dynamic>>> getVerifiedEvents() async {
-    try {
-      final response = await databases.listDocuments(
-        databaseId: databaseId,
-        collectionId: eventCollectionId,
-        queries: [Query.equal('is_verified', true)],
-      );
+static Future<List<Map<String, dynamic>>> getVerifiedEvents({String? category}) async {
+  try {
+    List<String> queries = [Query.equal('is_verified', true)];
 
-      return response.documents.map((doc) {
-        final data = Map<String, dynamic>.from(doc.data);
-        
-        // Add additional data here (e.g., event location, start time, etc.)
-        data['image_url'] = data['event_image_id'] != null
-            ? getImageUrl(data['event_image_id'])
-            : null;
-
-        // Example of adding more data from the event document
-        data['event_start_time'] = data['event_start_time'] ?? 'Not Available';
-        data['event_location'] = data['event_location'] ?? 'Not Available';
-        
-        return data;
-      }).toList();
-    } catch (e) {
-      print('❌ Fetch Verified Events Error: $e');
-      return [];
+    // If a category is selected, add it to the query
+    if (category != null && category != 'All') {
+      queries.add(Query.equal('event_category', category));
     }
+
+    final response = await databases.listDocuments(
+      databaseId: databaseId,
+      collectionId: eventCollectionId,
+      queries: queries, // Apply category filter dynamically
+    );
+
+    return response.documents.map((doc) {
+      final data = Map<String, dynamic>.from(doc.data);
+
+      // Handle event image
+      data['image_url'] = data['event_image_id'] != null
+          ? getImageUrl(data['event_image_id'])
+          : null;
+
+      // Additional data
+      data['event_start_time'] = data['event_start_time'] ?? 'Not Available';
+      data['event_location'] = data['event_location'] ?? 'Not Available';
+
+      return data;
+    }).toList();
+  } catch (e) {
+    print('❌ Fetch Verified Events Error: $e');
+    return [];
   }
+}
 
   /// **8️⃣ Verify Event**
   static Future<bool> verifyEvent(String documentId) async {
@@ -275,6 +285,27 @@ class AppwriteService {
     }
   }
 
+    /// **Fetch Event Categories from Appwrite**
+static Future<List<String>> fetchEventCategories() async {
+  try {
+    final response = await databases.listDocuments(
+      databaseId: databaseId,
+      collectionId: categoryId,
+    );
+
+    List<String> categories = response.documents.map((doc) {
+      final categoryName = doc.data['category']?.toString().trim(); // Ensure clean data
+      return categoryName?.isNotEmpty == true ? categoryName! : "Unknown Category";
+    }).toList();
+
+    print('✅ Event Categories Fetched: $categories');
+    return categories;
+  } catch (e) {
+    print('❌ Fetch Event Categories Error: $e');
+    return [];
+  }
+}
+
   /// Fetch current user details
   static Future<Map<String, dynamic>?> getCurrentUserDetails() async {
     try {
@@ -290,6 +321,36 @@ class AppwriteService {
     }
   }
 
+
+    /// **Fetch User Details from Collection**
+  /// **Fetch the user's details from Appwrite database collection**
+  static Future<Map<String, dynamic>?> getUserDetailsFromCollection() async {
+    try {
+      // Get the current user ID from Appwrite Account
+      models.User user = await account.get();
+      String userId = user.$id;
+
+      // Fetch user details from the database collection
+      models.DocumentList response = await databases.listDocuments(
+        databaseId: databaseId,
+        collectionId: userCollectionId,
+        queries: [
+          Query.equal('userId', userId), // Ensure 'userId' is the correct field name
+        ],
+      );
+
+      if (response.documents.isNotEmpty) {
+        print("✅ User details fetched successfully!");
+        return response.documents.first.data;
+      }
+
+      print("⚠️ No user details found in collection!");
+      return null;
+    } catch (e) {
+      print("❌ Error fetching user details: $e");
+      return null;
+    }
+  }
   /// **🔹 Get Image URL from File ID**
   static String getImageUrl(String fileId) {
     return 'https://cloud.appwrite.io/v1/storage/buckets/$bucketId/files/$fileId/view?project=67aa277600042d235f09';

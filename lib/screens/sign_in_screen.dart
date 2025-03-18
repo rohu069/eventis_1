@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'login_screen.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -113,11 +114,11 @@ Future<void> _signUp() async {
         hintText: hint,
         hintStyle: TextStyle(color: Colors.black54),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.black54),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.black),
         ),
         filled: true,
@@ -140,79 +141,100 @@ Future<void> _signUp() async {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    extendBodyBehindAppBar: true,
+    appBar: AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      leading: IconButton(
+        icon: Icon(Icons.arrow_back, color: Colors.white),
+        onPressed: () {
+          Navigator.pop(context);
+        },
       ),
-      body: Stack(
-        children: [
-Container(
-  decoration: BoxDecoration(
-    image: DecorationImage(
-      image: AssetImage('assets/stool.jpg'),
-      fit: BoxFit.cover,
     ),
-  ),
-),
-
-
-          IgnorePointer(
-            child: Container(
-              color: Colors.black.withOpacity(0.3),
+    body: Stack(
+      children: [
+        // Background Image
+        Container(
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('assets/stool.jpg'),
+              fit: BoxFit.cover,
             ),
           ),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0),
-            child: Center(
-              child: SingleChildScrollView(
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(height: 40),
-                      _buildTextField(_nameController, 'Enter your name'),
-                      SizedBox(height: 16),
-                      _buildTextField(_studentIdController, 'Enter your Student ID'),
-                      SizedBox(height: 16),
-                      _buildTextField(_phoneController, 'Enter your phone number', keyboardType: TextInputType.phone),
-                      SizedBox(height: 16),
-                      _buildTextField(_emailController, 'Enter your email', keyboardType: TextInputType.emailAddress),
-                      SizedBox(height: 16),
-                      _buildPasswordField(),
-                      SizedBox(height: 30),
-                      _isLoading
-                          ? CircularProgressIndicator()
-                          : ElevatedButton(
-                              onPressed: _signUp,
-                              style: ElevatedButton.styleFrom(
-                                minimumSize: Size(double.infinity, 50),
-                                backgroundColor: Colors.teal,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
+
+        ),
+
+        // Dark Overlay
+        IgnorePointer(
+          child: Container(
+            color: Colors.black.withOpacity(0.3),
+          ),
+        ),
+
+        // Scrollable Content
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16.0),
+          child: Center(
+            child: SingleChildScrollView(
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(height: 20), // Moves text a little higher
+
+                    // Register Heading (Similar to Welcome Back)
+                    Animate(
+                      effects: [
+                        FadeEffect(duration: 600.ms),
+                        SlideEffect(begin: Offset(0, -0.5), end: Offset.zero, curve: Curves.easeOut),
+                      ],
+                      child: Text(
+                        "Register",
+                        style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                    ),
+
+                    SizedBox(height: 40), // Adjusted spacing
+
+                    _buildTextField(_nameController, 'Enter your name'),
+                    SizedBox(height: 16),
+                    _buildTextField(_studentIdController, 'Enter your Student ID'),
+                    SizedBox(height: 16),
+                    _buildTextField(_phoneController, 'Enter your phone number', keyboardType: TextInputType.phone),
+                    SizedBox(height: 16),
+                    _buildTextField(_emailController, 'Enter your email', keyboardType: TextInputType.emailAddress),
+                    SizedBox(height: 16),
+                    _buildPasswordField(),
+                    SizedBox(height: 30),
+
+                    _isLoading
+                        ? CircularProgressIndicator()
+                        : ElevatedButton(
+                            onPressed: _signUp,
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: Size(double.infinity, 50),
+                              backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                              child: Text('Sign Up', style: TextStyle(fontSize: 18, color: Colors.white)),
                             ),
-                      SizedBox(height: 20),
-                    ],
-                  ),
+                            child: Text('Sign Up', style: TextStyle(fontSize: 18, color: const Color.fromARGB(255, 59, 48, 61))),
+                          ),
+
+                    SizedBox(height: 20),
+                  ],
                 ),
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 }

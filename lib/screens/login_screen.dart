@@ -87,91 +87,90 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Stack(
         children: [
           // Background Image
-Container(
-  decoration: BoxDecoration(
-    image: DecorationImage(
-      image: AssetImage('assets/stool.jpg'),
-      fit: BoxFit.cover,
-    ),
-  ),
-),
-
-
-
-          // Main Content
-Center(
-  child: Padding(
-    padding: const EdgeInsets.all(16.0),
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: <Widget>[
-        // Add extra spacing above the welcome text
-        const SizedBox(height: 40), // Increased height to push it up
-
-        // Animated Welcome Text
-        Animate(
-          effects: [
-            FadeEffect(duration: 600.ms),
-            SlideEffect(begin: const Offset(0, -0.5), end: Offset.zero, curve: Curves.easeOut),
-          ],
-          child: const Text(
-            "Welcome Back",
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
-          ),
-          
-        ),
-        SizedBox(height: 300),
-
-
-
-        // Form Fields
-        Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              _buildTextField(_emailController, "Email", false),
-              const SizedBox(height: 16),
-              _buildTextField(_passwordController, "Password", true),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 20),
-
-        // Animated Login Button
-        Animate(
-          effects: [FadeEffect(duration: 500.ms)],
-          child: ElevatedButton(
-            onPressed: _handleLogin,
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 15),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text("Log In"),
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        // Animated Sign-up Text
-        Animate(
-          effects: [
-            FadeEffect(duration: 800.ms, delay: 400.ms),
-            SlideEffect(begin: const Offset(0, 0.5), end: Offset.zero, curve: Curves.easeOut),
-          ],
-          child: TextButton(
-            onPressed: _navigateToSignUp,
-            child: const Text(
-              "Don’t have an account? Sign Up",
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+          Positioned.fill(
+            child: Image.asset(
+              'assets/stool.jpg',
+              fit: BoxFit.cover,
             ),
           ),
-        ),
-      ],
-    ),
-  ),
-),
 
+          // Semi-transparent overlay
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withOpacity(0.5), // Adjust opacity for better visibility
+            ),
+          ),
+
+          // Scrollable Content
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  const SizedBox(height: 40), // Increased height to push it up
+
+                  // Animated Welcome Text
+                  Animate(
+                    effects: [
+                      FadeEffect(duration: 600.ms),
+                      SlideEffect(begin: const Offset(0, -0.5), end: Offset.zero, curve: Curves.easeOut),
+                    ],
+                    child: const Text(
+                      "Welcome Back",
+                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20), // Adjusted spacing
+
+                  // Form Fields
+                  Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        _buildTextField(_emailController, "Email", false),
+                        const SizedBox(height: 16),
+                        _buildTextField(_passwordController, "Password", true),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Animated Login Button
+                  Animate(
+                    effects: [FadeEffect(duration: 500.ms)],
+                    child: ElevatedButton(
+                      onPressed: _handleLogin,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 15),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text("Log In", style: TextStyle(fontSize: 18, color: const Color.fromARGB(255, 59, 48, 61))),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Animated Sign-up Text
+                  Animate(
+                    effects: [
+                      FadeEffect(duration: 800.ms, delay: 400.ms),
+                      SlideEffect(begin: const Offset(0, 0.5), end: Offset.zero, curve: Curves.easeOut),
+                    ],
+                    child: TextButton(
+                      onPressed: _navigateToSignUp,
+                      child: const Text(
+                        "Don’t have an account? Sign Up",
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -184,7 +183,7 @@ Center(
         color: Colors.white.withOpacity(0.8),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(color: Colors.black26, blurRadius: 5, offset: Offset(2, 2)),
+          BoxShadow(color: const Color.fromARGB(0, 0, 0, 0), blurRadius: 5, offset: Offset(2, 2)),
         ],
       ),
       child: TextFormField(

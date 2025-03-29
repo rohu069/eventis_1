@@ -4,8 +4,10 @@ import 'package:appwrite/models.dart' as models;
 
 class AppwriteService {
   static final Client client = Client()
-    ..setEndpoint('https://cloud.appwrite.io/v1') // Replace with your Appwrite endpoint
-    ..setProject('67aa277600042d235f09'); // Replace with your Appwrite project ID
+    ..setEndpoint(
+        'https://cloud.appwrite.io/v1') // Replace with your Appwrite endpoint
+    ..setProject(
+        '67aa277600042d235f09'); // Replace with your Appwrite project ID
 
   static final Account account = Account(client);
   static final Databases databases = Databases(client);
@@ -15,7 +17,7 @@ class AppwriteService {
   static const String userCollectionId = '67aa28a80008eb0d3bda';
   static const String eventCollectionId = '67b78ecb001e8c2ac03d';
   static const String bucketId = '67b78e8a000a2b7b43fd';
-    static const String categoryId = '67cefd76002cba19fc92';
+  static const String categoryId = '67cefd76002cba19fc92';
 
   /// **1️⃣ Sign Up Method**
   static Future<String?> signUp({
@@ -33,7 +35,8 @@ class AppwriteService {
         name: name,
       );
 
-      await account.createEmailPasswordSession(email: email, password: password);
+      await account.createEmailPasswordSession(
+          email: email, password: password);
 
       await databases.createDocument(
         databaseId: databaseId,
@@ -57,9 +60,11 @@ class AppwriteService {
   }
 
   /// **2️⃣ Login Method**
-  static Future<String?> login({required String email, required String password}) async {
+  static Future<String?> login(
+      {required String email, required String password}) async {
     try {
-      await account.createEmailPasswordSession(email: email, password: password);
+      await account.createEmailPasswordSession(
+          email: email, password: password);
       models.User user = await account.get();
       print("✅ Login Successful: ${user.$id}");
       return null;
@@ -105,7 +110,7 @@ class AppwriteService {
     required String eventName,
     required String eventPurpose,
     required String eventDate,
-    required String eventVenue,// New field for location
+    required String eventVenue, // New field for location
     required File? eventImage,
     required String link,
   }) async {
@@ -155,7 +160,9 @@ class AppwriteService {
       final response = await databases.listDocuments(
         databaseId: databaseId,
         collectionId: eventCollectionId,
-        queries: [Query.equal('is_verified', false)], // Only fetch unverified events
+        queries: [
+          Query.equal('is_verified', false)
+        ], // Only fetch unverified events
       );
 
       return response.documents.map((doc) {
@@ -169,7 +176,7 @@ class AppwriteService {
         // Example of adding more data from the event document
         data['event_start_time'] = data['event_start_time'] ?? 'Not Available';
         data['event_location'] = data['event_location'] ?? 'Not Available';
-        
+
         return data;
       }).toList();
     } catch (e) {
@@ -179,40 +186,41 @@ class AppwriteService {
   }
 
   /// **7️⃣ Get Verified Events with Additional Data**
-static Future<List<Map<String, dynamic>>> getVerifiedEvents({String? category}) async {
-  try {
-    List<String> queries = [Query.equal('is_verified', true)];
+  static Future<List<Map<String, dynamic>>> getVerifiedEvents(
+      {String? category}) async {
+    try {
+      List<String> queries = [Query.equal('is_verified', true)];
 
-    // If a category is selected, add it to the query
-    if (category != null && category != 'All') {
-      queries.add(Query.equal('event_category', category));
+      // If a category is selected, add it to the query
+      if (category != null && category != 'All') {
+        queries.add(Query.equal('event_category', category));
+      }
+
+      final response = await databases.listDocuments(
+        databaseId: databaseId,
+        collectionId: eventCollectionId,
+        queries: queries, // Apply category filter dynamically
+      );
+
+      return response.documents.map((doc) {
+        final data = Map<String, dynamic>.from(doc.data);
+
+        // Handle event image
+        data['image_url'] = data['event_image_id'] != null
+            ? getImageUrl(data['event_image_id'])
+            : null;
+
+        // Additional data
+        data['event_start_time'] = data['event_start_time'] ?? 'Not Available';
+        data['event_location'] = data['event_location'] ?? 'Not Available';
+
+        return data;
+      }).toList();
+    } catch (e) {
+      print('❌ Fetch Verified Events Error: $e');
+      return [];
     }
-
-    final response = await databases.listDocuments(
-      databaseId: databaseId,
-      collectionId: eventCollectionId,
-      queries: queries, // Apply category filter dynamically
-    );
-
-    return response.documents.map((doc) {
-      final data = Map<String, dynamic>.from(doc.data);
-
-      // Handle event image
-      data['image_url'] = data['event_image_id'] != null
-          ? getImageUrl(data['event_image_id'])
-          : null;
-
-      // Additional data
-      data['event_start_time'] = data['event_start_time'] ?? 'Not Available';
-      data['event_location'] = data['event_location'] ?? 'Not Available';
-
-      return data;
-    }).toList();
-  } catch (e) {
-    print('❌ Fetch Verified Events Error: $e');
-    return [];
   }
-}
 
   /// **8️⃣ Verify Event**
   static Future<bool> verifyEvent(String documentId) async {
@@ -233,23 +241,22 @@ static Future<List<Map<String, dynamic>>> getVerifiedEvents({String? category}) 
   }
 
   /// **9️⃣ Delete an Event**
-  static Future<bool> deleteEvent(String documentId) async {
+  static Future<bool> deleteEvent(String eventId) async {
     try {
       await databases.deleteDocument(
         databaseId: databaseId,
         collectionId: eventCollectionId,
-        documentId: documentId,
+        documentId: eventId,
       );
-      print('✅ Event deleted successfully.');
-      return true;
+      return true; // ✅ Return true on success
     } catch (e) {
-      print('❌ Delete Event Error: $e');
-      return false;
+      return false; // ❌ Return false on failure
     }
   }
 
   /// **🔟 Update Event Details**
-  static Future<bool> updateEvent(String documentId, Map<String, dynamic> updatedData) async {
+  static Future<bool> updateEvent(
+      String documentId, Map<String, dynamic> updatedData) async {
     try {
       await databases.updateDocument(
         databaseId: databaseId,
@@ -285,73 +292,73 @@ static Future<List<Map<String, dynamic>>> getVerifiedEvents({String? category}) 
     }
   }
 
-    /// **Fetch Event Categories from Appwrite**
-static Future<List<String>> fetchEventCategories() async {
-  try {
-    final response = await databases.listDocuments(
-      databaseId: databaseId,
-      collectionId: categoryId,
-    );
-
-    List<String> categories = response.documents.map((doc) {
-      final categoryName = doc.data['category']?.toString().trim(); // Ensure clean data
-      return categoryName?.isNotEmpty == true ? categoryName! : "Unknown Category";
-    }).toList();
-
-    print('✅ Event Categories Fetched: $categories');
-    return categories;
-  } catch (e) {
-    print('❌ Fetch Event Categories Error: $e');
-    return [];
-  }
-}
-
-  /// Fetch current user details
-  static Future<Map<String, dynamic>?> getCurrentUserDetails() async {
+  /// **Fetch Event Categories from Appwrite**
+  static Future<List<String>> fetchEventCategories() async {
     try {
-      models.User user = await account.get();
-      return {
-        'id': user.$id,
-        'name': user.name,
-        'email': user.email,
-      };
+      final response = await databases.listDocuments(
+        databaseId: databaseId,
+        collectionId: categoryId,
+      );
+
+      List<String> categories = response.documents.map((doc) {
+        final categoryName =
+            doc.data['category']?.toString().trim(); // Ensure clean data
+        return categoryName?.isNotEmpty == true
+            ? categoryName!
+            : "Unknown Category";
+      }).toList();
+
+      print('✅ Event Categories Fetched: $categories');
+      return categories;
     } catch (e) {
-      print("Error fetching user details: $e");
-      return null;
+      print('❌ Fetch Event Categories Error: $e');
+      return [];
     }
   }
 
-
-    /// **Fetch User Details from Collection**
-  /// **Fetch the user's details from Appwrite database collection**
-  static Future<Map<String, dynamic>?> getUserDetailsFromCollection() async {
+  static Future<void> logoutUser() async {
     try {
-      // Get the current user ID from Appwrite Account
-      models.User user = await account.get();
-      String userId = user.$id;
+      await account.deleteSession(sessionId: 'current');
+      print("✅ User logged out successfully");
+    } catch (e) {
+      print("❌ Logout failed: $e");
+    }
+  }
 
-      // Fetch user details from the database collection
-      models.DocumentList response = await databases.listDocuments(
+  // Fetch the current logged-in user's details
+  static Future<Map<String, dynamic>?> getCurrentUserDetails() async {
+    try {
+      models.User user = await account.get(); // Get current user session
+      String userEmail = user.email;
+
+      // Query the collection to find the user by email
+      models.DocumentList documents = await databases.listDocuments(
         databaseId: databaseId,
         collectionId: userCollectionId,
         queries: [
-          Query.equal('userId', userId), // Ensure 'userId' is the correct field name
+          Query.equal("email", userEmail),
         ],
       );
 
-      if (response.documents.isNotEmpty) {
-        print("✅ User details fetched successfully!");
-        return response.documents.first.data;
+      if (documents.documents.isNotEmpty) {
+        final userData = documents.documents.first.data;
+        return {
+          'name': userData['name'],
+          'email': userData['email'],
+          'phone': userData['phone'] ?? "Not provided",
+          'profileImage': userData['profileImage'] ?? null,
+          'createdAt': user.registration,
+        };
+      } else {
+        print("⚠️ No user found in the database.");
+        return null;
       }
-
-      print("⚠️ No user details found in collection!");
-      return null;
     } catch (e) {
-      print("❌ Error fetching user details: $e");
+      print("❌ Error fetching user details from database: $e");
       return null;
     }
   }
-  /// **🔹 Get Image URL from File ID**
+
   static String getImageUrl(String fileId) {
     return 'https://cloud.appwrite.io/v1/storage/buckets/$bucketId/files/$fileId/view?project=67aa277600042d235f09';
   }

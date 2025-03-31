@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:appwrite/appwrite.dart';
-import 'package:appwrite/models.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'login_screen.dart';
 
@@ -16,13 +15,11 @@ class _SignInScreenState extends State<SignInScreen> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-
   bool _isLoading = false;
 
   final Client client = Client()
-    ..setEndpoint('https://cloud.appwrite.io/v1') // Replace with Appwrite endpoint
-    ..setProject('67aa277600042d235f09'); // Replace with Appwrite project ID
-    
+    ..setEndpoint('https://cloud.appwrite.io/v1')
+    ..setProject('67aa277600042d235f09');
 
   late final Account account;
   late final Databases databases;
@@ -34,207 +31,233 @@ class _SignInScreenState extends State<SignInScreen> {
     databases = Databases(client);
   }
 
-Future<void> _signUp() async {
-  if (!_formKey.currentState!.validate()) return;
+  Future<void> _signUp() async {
+    if (!_formKey.currentState!.validate()) return;
 
-  setState(() {
-    _isLoading = true;
-  });
+    setState(() => _isLoading = true);
 
-  try {
-    //  Create User Account (This automatically logs in the user)
-    final User newUser = await account.create(
-      userId: ID.unique(),
-      email: _emailController.text,
-      password: _passwordController.text,
-    );
-    print(" User Created: ${newUser.$id}");
+    try {
+      final user = await account.create(
+        userId: ID.unique(),
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
 
-    //  No need to create a session manually!
+      await databases.createDocument(
+        databaseId: '67aa2889002cd582ca1c',
+        collectionId: '67aa28a80008eb0d3bda',
+        documentId: ID.unique(),
+        data: {
+          'name': _nameController.text,
+          'studentId': _studentIdController.text,
+          'phone': _phoneController.text,
+          'email': _emailController.text,
+          'userId': user.$id,
+        },
+        permissions: [
+          Permission.read(Role.any()),
+          Permission.write(Role.any()),
+        ],
+      );
 
-    //  Fetch the authenticated user (they are already logged in)
-    final User loggedInUser = await account.get();
-    print(" Logged In User: ${loggedInUser.$id}");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Sign-up successful! Please log in.')),
+      );
 
-    //  Create Document with Correct Permissions
-    await databases.createDocument(
-      databaseId: '67aa2889002cd582ca1c',
-      collectionId: '67aa28a80008eb0d3bda',
-      documentId: ID.unique(),
-      data: {
-        'name': _nameController.text,
-        'studentId': _studentIdController.text,
-        'phone': _phoneController.text,
-        'email': _emailController.text,
-        'userId': loggedInUser.$id,
-      },
-      permissions: [
-  Permission.read(Role.any()), // Everyone can read
-  Permission.write(Role.any()), // Everyone can write
-],
+      await Future.delayed(Duration(milliseconds: 500));
 
-    );
-    print(" Document Created Successfully");
-
-    // 5️ Show Success Message & Navigate to Login Screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Sign-up successful! Please log in.')),
-    );
-
-    await Future.delayed(Duration(milliseconds: 500));
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => LoginScreen()),
-    );
-  } on AppwriteException catch (e) {
-    print(" Appwrite Exception: ${e.message}");
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Sign-up failed: ${e.message}')),
-    );
-  } catch (e) {
-    print(" Unexpected Error: $e");
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('An unexpected error occurred. Please try again.')),
-    );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => LoginScreen()),
+      );
+    } on AppwriteException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Sign-up failed: ${e.message}')),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
-  setState(() {
-    _isLoading = false;
-  });
-}
-
   Widget _buildTextField(TextEditingController controller, String hint,
-      {TextInputType keyboardType = TextInputType.text}) {
+      {TextInputType keyboardType = TextInputType.text,
+      bool obscureText = false}) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
-      style: TextStyle(color: Colors.black),
+      obscureText: obscureText,
+      style: TextStyle(color: Colors.white),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: Colors.black54),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.black54),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.black),
-        ),
+        hintStyle: TextStyle(color: Colors.white70),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.8),
+        fillColor: Colors.white.withOpacity(0.15),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+        ),
       ),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'This field is required';
-        }
-        return null;
-      },
+      validator: (value) =>
+          value == null || value.isEmpty ? 'This field is required' : null,
     );
   }
 
-  Widget _buildPasswordField() {
-    return _buildTextField(
-      _passwordController,
-      'Enter your password',
-      keyboardType: TextInputType.visiblePassword,
-    );
-  }
-
-@override
-Widget build(BuildContext context) {
-  return Scaffold(
-    extendBodyBehindAppBar: true,
-    appBar: AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      leading: IconButton(
-        icon: Icon(Icons.arrow_back, color: Colors.white),
-        onPressed: () {
-          Navigator.pop(context);
-        },
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
-    ),
-    body: Stack(
-      children: [
-        // Background Image
-        Container(
-          decoration: BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage('assets/stool.jpg'),
-              fit: BoxFit.cover,
-            ),
-          ),
-
-        ),
-
-        // Dark Overlay
-        IgnorePointer(
-          child: Container(
-            color: Colors.black.withOpacity(0.3),
-          ),
-        ),
-
-        // Scrollable Content
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.0),
-          child: Center(
-            child: SingleChildScrollView(
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(height: 20), // Moves text a little higher
-
-                    // Register Heading (Similar to Welcome Back)
-                    Animate(
-                      effects: [
-                        FadeEffect(duration: 600.ms),
-                        SlideEffect(begin: Offset(0, -0.5), end: Offset.zero, curve: Curves.easeOut),
-                      ],
-                      child: Text(
-                        "Register",
-                        style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
-                      ),
-                    ),
-
-                    SizedBox(height: 40), // Adjusted spacing
-
-                    _buildTextField(_nameController, 'Enter your name'),
-                    SizedBox(height: 16),
-                    _buildTextField(_studentIdController, 'Enter your Student ID'),
-                    SizedBox(height: 16),
-                    _buildTextField(_phoneController, 'Enter your phone number', keyboardType: TextInputType.phone),
-                    SizedBox(height: 16),
-                    _buildTextField(_emailController, 'Enter your email', keyboardType: TextInputType.emailAddress),
-                    SizedBox(height: 16),
-                    _buildPasswordField(),
-                    SizedBox(height: 30),
-
-                    _isLoading
-                        ? CircularProgressIndicator()
-                        : ElevatedButton(
-                            onPressed: _signUp,
-                            style: ElevatedButton.styleFrom(
-                              minimumSize: Size(double.infinity, 50),
-                              backgroundColor: const Color.fromARGB(255, 255, 255, 255),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: Text('Sign Up', style: TextStyle(fontSize: 18, color: const Color.fromARGB(255, 59, 48, 61))),
-                          ),
-
-                    SizedBox(height: 20),
-                  ],
-                ),
+      body: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/stool.jpg'),
+                fit: BoxFit.cover,
               ),
             ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+          Container(color: Colors.black.withOpacity(0.3)),
+          Center(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  Animate(
+                    effects: [
+                      FadeEffect(duration: 600.ms, delay: 300.ms),
+                      SlideEffect(
+                        begin: const Offset(0, -0.2),
+                        end: Offset.zero,
+                        curve: Curves.easeOut,
+                        duration: 600.ms,
+                      ),
+                    ],
+                    child: const Text(
+                      "NEW USER?",
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 1.2,
+                        shadows: [
+                          Shadow(
+                            color: Color.fromARGB(137, 255, 255, 255),
+                            blurRadius: 5,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // Subtitle text
+                  Animate(
+                    effects: [
+                      FadeEffect(duration: 600.ms, delay: 400.ms),
+                    ],
+                    child: const Text(
+                      "Register Here",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ),
+
+                  Animate(
+                    effects: [
+                      FadeEffect(duration: 600.ms),
+                      SlideEffect(
+                          begin: Offset(0, 0.2),
+                          end: Offset.zero,
+                          curve: Curves.easeOut),
+                    ],
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Container(
+                        padding: EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                              color: Colors.white.withOpacity(0.2), width: 1.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color.fromARGB(255, 255, 255, 255)
+                                  .withOpacity(0.1),
+                              blurRadius: 10,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            children: [
+                              _buildTextField(
+                                  _nameController, 'Enter your name'),
+                              SizedBox(height: 16),
+                              _buildTextField(_studentIdController,
+                                  'Enter your Student ID'),
+                              SizedBox(height: 16),
+                              _buildTextField(
+                                  _phoneController, 'Enter your phone number',
+                                  keyboardType: TextInputType.phone),
+                              SizedBox(height: 16),
+                              _buildTextField(
+                                  _emailController, 'Enter your email',
+                                  keyboardType: TextInputType.emailAddress),
+                              SizedBox(height: 16),
+                              _buildTextField(
+                                  _passwordController, 'Enter your password',
+                                  obscureText: true),
+                              SizedBox(height: 30),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 55,
+                                child: ElevatedButton(
+                                  onPressed: _isLoading ? null : _signUp,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.indigo.shade600,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(15)),
+                                    elevation: 5,
+                                    shadowColor: Colors.indigo.withOpacity(0.5),
+                                  ),
+                                  child: _isLoading
+                                      ? CircularProgressIndicator(
+                                          color: Colors.white, strokeWidth: 3)
+                                      : Text('Sign Up',
+                                          style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              letterSpacing: 1.2)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

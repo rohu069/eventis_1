@@ -18,6 +18,8 @@ class _AddEventScreenState extends State<AddEventScreen> {
   final TextEditingController dateController = TextEditingController();
   final TextEditingController venueController = TextEditingController();
   final TextEditingController linkController = TextEditingController();
+  final TextEditingController maxParticipantsController =
+      TextEditingController(); // New field
   String? imageUrl;
 
   @override
@@ -31,8 +33,12 @@ class _AddEventScreenState extends State<AddEventScreen> {
       batchController.text = widget.event!['batch'] ?? '';
       dateController.text = widget.event!['event_date'] ?? '';
       venueController.text = widget.event!['event_venue'] ?? '';
-      linkController.text = widget.event!['link'];
+      linkController.text = widget.event!['link'] ?? '';
       imageUrl = widget.event!['image_url'];
+
+      // Set max participants (default to 0 if null)
+      maxParticipantsController.text =
+          (widget.event!['no_participants'] ?? 0).toString();
     }
   }
 
@@ -63,7 +69,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Event deleted successfully!")),
       );
-      Navigator.pop(context, true); // Return true to refresh admin dashboard
+      Navigator.pop(context, true);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Failed to delete event")),
@@ -169,22 +175,6 @@ class _AddEventScreenState extends State<AddEventScreen> {
                       },
                     ),
                   ),
-                )
-              else
-                Container(
-                  height: 250,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.image_not_supported_outlined,
-                      size: 80,
-                      color: Colors.grey,
-                    ),
-                  ),
                 ),
               const SizedBox(height: 24),
               Card(
@@ -206,40 +196,37 @@ class _AddEventScreenState extends State<AddEventScreen> {
                       ),
                       const SizedBox(height: 16),
                       _buildInfoField(
-                        icon: Icons.event,
-                        label: 'Event Name',
-                        controller: eventNameController,
-                      ),
+                          icon: Icons.event,
+                          label: 'Event Name',
+                          controller: eventNameController),
                       _buildInfoField(
-                        icon: Icons.person,
-                        label: 'Organizer',
-                        controller: organizerController,
-                      ),
+                          icon: Icons.person,
+                          label: 'Organizer',
+                          controller: organizerController),
                       _buildInfoField(
-                        icon: Icons.business,
-                        label: 'Department',
-                        controller: departmentController,
-                      ),
+                          icon: Icons.business,
+                          label: 'Department',
+                          controller: departmentController),
                       _buildInfoField(
-                        icon: Icons.group,
-                        label: 'Batch',
-                        controller: batchController,
-                      ),
+                          icon: Icons.group,
+                          label: 'Batch',
+                          controller: batchController),
                       _buildInfoField(
-                        icon: Icons.calendar_today,
-                        label: 'Date',
-                        controller: dateController,
-                      ),
+                          icon: Icons.calendar_today,
+                          label: 'Date',
+                          controller: dateController),
                       _buildInfoField(
-                        icon: Icons.location_on,
-                        label: 'Venue',
-                        controller: venueController,
-                      ),
+                          icon: Icons.location_on,
+                          label: 'Venue',
+                          controller: venueController),
                       _buildInfoField(
-                        icon: Icons.link,
-                        label: 'Registration Link',
-                        controller: linkController,
-                      ),
+                          icon: Icons.link,
+                          label: 'Registration Link',
+                          controller: linkController),
+                      _buildInfoField(
+                          icon: Icons.people,
+                          label: 'Max Participants',
+                          controller: maxParticipantsController),
                     ],
                   ),
                 ),
@@ -258,9 +245,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
                         backgroundColor: Colors.green,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 3,
+                            borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
                   ),
@@ -280,15 +265,12 @@ class _AddEventScreenState extends State<AddEventScreen> {
                         backgroundColor: Colors.red,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 3,
+                            borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
             ],
           ),
         ),
@@ -296,31 +278,15 @@ class _AddEventScreenState extends State<AddEventScreen> {
     );
   }
 
-  Widget _buildInfoField({
-    required IconData icon,
-    required String label,
-    required TextEditingController controller,
-  }) {
+  Widget _buildInfoField(
+      {required IconData icon,
+      required String label,
+      required TextEditingController controller}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: TextField(
         controller: controller,
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: Icon(icon),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade300),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade300),
-          ),
-          filled: true,
-          fillColor: Colors.grey.shade50,
-          contentPadding:
-              const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        ),
+        decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon)),
         readOnly: true,
       ),
     );

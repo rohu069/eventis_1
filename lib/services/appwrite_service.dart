@@ -146,6 +146,7 @@ class AppwriteService {
     required String eventVenue, // New field for location
     required File? eventImage,
     required String link,
+    required int noparticipants,
   }) async {
     try {
       String? userId = await getCurrentUserId();
@@ -176,6 +177,7 @@ class AppwriteService {
           'event_image_id': fileId,
           'is_verified': false, // Default to false
           'link': link,
+          'no_participants': noparticipants,
         },
       );
 
@@ -419,6 +421,37 @@ class AppwriteService {
     } catch (e) {
       print('❌ Fetch Event Details Error: $e');
       return null;
+    }
+  }
+
+  static Future<bool> isUserRegisteredForEvent(String eventId) async {
+    try {
+      final database = Databases(client);
+
+      // Fetch current user details
+      Map<String, dynamic>? userDetails = await getCurrentUserDetails();
+      if (userDetails == null) {
+        print("⚠️ User details not found. Cannot check registration status.");
+        return false;
+      }
+
+      String userId = userDetails['userId'];
+
+      // Query the database for an existing registration
+      final response = await database.listDocuments(
+        databaseId: databaseId,
+        collectionId: eventsId,
+        queries: [
+          Query.equal("user_id", userId),
+          Query.equal("event_id", eventId),
+        ],
+      );
+
+      // If any document exists, the user is already registered
+      return response.documents.isNotEmpty;
+    } catch (e) {
+      print("❌ Error checking registration status: $e");
+      return false;
     }
   }
 

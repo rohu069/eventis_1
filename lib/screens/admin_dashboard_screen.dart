@@ -113,8 +113,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             return const Center(child: Text('No event registrations found'));
           }
 
+          // Include unverified events in the list
           final unverifiedEvents = snapshot.data!
-              .where((event) => event['is_verified'] == false)
+              .where((event) =>
+                  event['is_verified'] == false || event['is_verified'] == null)
               .toList();
 
           return _buildEventList(unverifiedEvents);
@@ -160,6 +162,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               );
 
               if (verified == true) {
+                // Re-fetch events after verification
                 _fetchEventRegistrations();
               }
             },
@@ -180,8 +183,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ),
                   Text("Organizer: ${event['name'] ?? 'Unknown'}"),
                   Text("Date: ${event['event_date'] ?? 'Unknown'}"),
-                  Text(
-                      "Participants: ${event['no_participants'] ?? 'unknown'}"),
+                  Text("Participants: ${event['no_participants'] ?? '0'}"),
                   if (isDuplicate) // 🛑 Show a warning if it's a duplicate
                     Padding(
                       padding: const EdgeInsets.only(top: 5),

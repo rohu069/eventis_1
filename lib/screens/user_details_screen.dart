@@ -1,4 +1,6 @@
+import 'package:appwrite/appwrite.dart';
 import 'package:flutter/material.dart';
+import 'package:new_event/screens/my_events_screen.dart';
 import 'package:new_event/services/appwrite_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -334,19 +336,17 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          ElevatedButton.icon(
-            icon: const Icon(Icons.event_outlined),
-            label: const Text("My Events"),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-              minimumSize: const Size(double.infinity, 0),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
+          ElevatedButton(
             onPressed: () {
-              // Navigate to user events
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      MyEventsScreen(), // No need to pass userId
+                ),
+              );
             },
+            child: const Text("Go to My Events"),
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(

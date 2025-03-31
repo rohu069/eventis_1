@@ -19,7 +19,7 @@ class _VerifiedEventsScreenState extends State<VerifiedEventsScreen> {
 
   void _fetchVerifiedEvents() {
     setState(() {
-      _verifiedEvents = AppwriteService.getVerifiedEvents(); // ✅ Fetch only verified events
+      _verifiedEvents = AppwriteService.getVerifiedEvents();
     });
   }
 
@@ -38,10 +38,18 @@ class _VerifiedEventsScreenState extends State<VerifiedEventsScreen> {
             return const Center(child: Text('No verified events found'));
           }
 
+          final verifiedEvents = snapshot.data!;
+
+          // Print event IDs for debugging
+          for (var event in verifiedEvents) {
+            print(
+                "✅ Verified Event ID: ${event['\$id']} | Name: ${event['event_name']}");
+          }
+
           return ListView.builder(
-            itemCount: snapshot.data!.length,
+            itemCount: verifiedEvents.length,
             itemBuilder: (context, index) {
-              final event = snapshot.data![index];
+              final event = verifiedEvents[index];
 
               return Card(
                 margin: const EdgeInsets.all(10),
@@ -56,10 +64,12 @@ class _VerifiedEventsScreenState extends State<VerifiedEventsScreen> {
                     children: [
                       Text(
                         event['event_name'] ?? 'Unknown Event',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       Text("Organizer: ${event['name'] ?? 'Unknown'}"),
                       Text("Date: ${event['event_date'] ?? 'Unknown'}"),
+                      Text("Event ID: ${event['\$id']}"), // Displaying Event ID
                     ],
                   ),
                 ),

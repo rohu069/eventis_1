@@ -23,6 +23,7 @@ class _EventRegistrationScreenState extends State<EventRegistrationScreen> {
   final _eventDateController = TextEditingController();
   final _eventVenueController = TextEditingController();
   final _linkController = TextEditingController();
+  final _noParticipantsController = TextEditingController();
 
   File? _image;
   final ImagePicker _picker = ImagePicker();
@@ -270,8 +271,6 @@ class _EventRegistrationScreenState extends State<EventRegistrationScreen> {
                         _buildDatePickerField(),
                         _buildTextField(_eventVenueController, 'Event Venue',
                             Icons.location_on),
-                        _buildTextField(
-                            _linkController, 'Registration Link', Icons.link),
                         const SizedBox(height: 16),
                         _buildSectionTitle('Event Banner'),
                         _buildImagePicker(),

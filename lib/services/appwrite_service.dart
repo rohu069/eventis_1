@@ -18,6 +18,7 @@ class AppwriteService {
   static const String eventCollectionId = '67b78ecb001e8c2ac03d';
   static const String bucketId = '67b78e8a000a2b7b43fd';
   static const String categoryId = '67cefd76002cba19fc92';
+  static const String eventsId = '67e9c07d00042973758c';
 
   /// **1️⃣ Sign Up Method**
   static Future<String?> signUp({
@@ -56,6 +57,38 @@ class AppwriteService {
     } catch (e) {
       print('❌ SignUp Error: $e');
       return e.toString();
+    }
+  }
+
+  Future<bool> isUserLoggedIn() async {
+    try {
+      await AppwriteService.account.get();
+      return true; // User has an active session
+    } catch (e) {
+      return false; // No active session
+    }
+  }
+
+  static Future<String?> getUserRole() async {
+    try {
+      final userDetails = await getCurrentUserDetails();
+      return userDetails?['role'];
+    } catch (e) {
+      print("❌ Error fetching user role: $e");
+      return null;
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> fetchAllUsers() async {
+    try {
+      final response = await databases.listDocuments(
+        databaseId: databaseId,
+        collectionId: userCollectionId,
+      );
+      return response.documents.map((doc) => doc.data).toList();
+    } catch (e) {
+      print("❌ Fetch All Users Error: $e");
+      return [];
     }
   }
 
@@ -155,32 +188,82 @@ class AppwriteService {
   }
 
   /// **6️⃣ Get Event Registrations with Additional Data**
-  static Future<List<Map<String, dynamic>>> getEventRegistrations() async {
+  Future<List<Map<String, dynamic>>> getEventRegistrations(
+      String eventId) async {
     try {
       final response = await databases.listDocuments(
         databaseId: databaseId,
-        collectionId: eventCollectionId,
+        collectionId: eventsId,
+        queries: [Query.equal('event_id', eventId)],
+      );
+
+      List<Map<String, dynamic>> registrations = [];
+
+      for (var doc in response.documents) {
+        Map<String, dynamic> registrationData = doc.data;
+        String? userId = registrationData['user_id'];
+
+        // 🛑 Check if user_id is null
+        if (userId == null || userId.isEmpty) {
+          print("⚠️ Skipping registration due to missing user_id.");
+          continue;
+        }
+
+        print("🔍 Fetching user details for user_id: $userId");
+
+        try {
+          // Fetch user details from the Users Collection
+          final userResponse = await databases.getDocument(
+            databaseId: databaseId,
+            collectionId: userCollectionId, // ✅ Ensure this is correct
+            documentId: userId,
+          );
+
+          // ✅ Correct field mappings
+          registrationData['name'] =
+              userResponse.data["user_name"] ?? "Unknown";
+          registrationData['email'] = userResponse.data["user_email"] ?? "N/A";
+          registrationData['phone'] = userResponse.data["user_phone"] ?? "N/A";
+        } catch (e) {
+          print("❌ Error fetching user details for user_id $userId: $e");
+          registrationData['name'] = "Unknown";
+          registrationData['email'] = "N/A";
+          registrationData['phone'] = "N/A";
+        }
+
+        registrations.add(registrationData);
+      }
+
+      print("✅ Processed Registrations with User Details: $registrations");
+      return registrations;
+    } catch (e) {
+      print("❌ Error fetching registrations: $e");
+      return [];
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getUnverifiedEvents() async {
+    try {
+      final response = await databases.listDocuments(
+        databaseId: databaseId,
+        collectionId: eventCollectionId, // ✅ Fetch from event collection
         queries: [
-          Query.equal('is_verified', false)
-        ], // Only fetch unverified events
+          Query.equal('is_verified', false) // ✅ Only unverified events
+        ],
       );
 
       return response.documents.map((doc) {
         final data = Map<String, dynamic>.from(doc.data);
-
-        // Add additional data here (e.g., event location, start time, etc.)
         data['image_url'] = data['event_image_id'] != null
             ? getImageUrl(data['event_image_id'])
             : null;
-
-        // Example of adding more data from the event document
         data['event_start_time'] = data['event_start_time'] ?? 'Not Available';
         data['event_location'] = data['event_location'] ?? 'Not Available';
 
         return data;
       }).toList();
     } catch (e) {
-      print('❌ Fetch Event Registrations Error: $e');
+      print('❌ Fetch Unverified Events Error: $e');
       return [];
     }
   }
@@ -202,8 +285,14 @@ class AppwriteService {
         queries: queries, // Apply category filter dynamically
       );
 
+      // Log the response documents to see their structure
+      print("🔍 Full Response: ${response.documents}");
+
       return response.documents.map((doc) {
         final data = Map<String, dynamic>.from(doc.data);
+
+        // Debug: Log the event document to see if event_id is present
+        print("🔍 Event Document: $data");
 
         // Handle event image
         data['image_url'] = data['event_image_id'] != null
@@ -213,6 +302,13 @@ class AppwriteService {
         // Additional data
         data['event_start_time'] = data['event_start_time'] ?? 'Not Available';
         data['event_location'] = data['event_location'] ?? 'Not Available';
+
+        // Check if event_id is in the event data
+        if (data['event_id'] != null) {
+          print("🔍 Found event_id: ${data['event_id']}");
+        } else {
+          print("❌ Missing event_id in event document");
+        }
 
         return data;
       }).toList();
@@ -282,13 +378,116 @@ class AppwriteService {
   }
 
   /// **Get Current User ID**
+  // ✅ Get current logged-in user's ID
   static Future<String?> getCurrentUserId() async {
     try {
       models.User user = await account.get();
-      return user.$id; // User ID
+      return user.$id;
     } catch (e) {
-      print('❌ Error fetching current user ID: $e');
+      print("❌ Error getting user: $e");
       return null;
+    }
+  }
+
+  // ✅ Check if user session is active
+  static Future<bool> checkSession() async {
+    try {
+      await account.get(); // If this succeeds, the session is valid
+      return true;
+    } catch (e) {
+      print("❌ No active session: $e");
+      return false;
+    }
+  }
+
+  static Future<Map<String, dynamic>?> getEventDetails(String eventId) async {
+    try {
+      final document = await databases.getDocument(
+        databaseId: databaseId,
+        collectionId: eventCollectionId,
+        documentId: eventId,
+      );
+
+      final data = Map<String, dynamic>.from(document.data);
+
+      // Fetch image URL if available
+      data['image_url'] = data['event_image_id'] != null
+          ? getImageUrl(data['event_image_id'])
+          : null;
+
+      return data;
+    } catch (e) {
+      print('❌ Fetch Event Details Error: $e');
+      return null;
+    }
+  }
+
+  /// **🔹 Register for an Event**
+  static Future<bool> registerForEvent({
+    required String eventId,
+  }) async {
+    try {
+      final database = Databases(client);
+
+      // Fetch current user details
+      Map<String, dynamic>? userDetails = await getCurrentUserDetails();
+
+      if (userDetails == null) {
+        print("⚠️ User details not found. Cannot register for the event.");
+        return false;
+      }
+
+      // Extract user details
+      String userId = userDetails['userId'];
+      String userName = userDetails['name'];
+      String userEmail = userDetails['email'];
+      String userPhone = userDetails['phone'];
+
+      // Create a new registration document in the database
+      await database.createDocument(
+        databaseId: databaseId,
+        collectionId: eventsId,
+        documentId: ID.unique(),
+        data: {
+          "user_id": userId,
+          "event_id": eventId,
+          "user_name": userName,
+          "user_email": userEmail,
+          "user_phone": userPhone,
+        },
+      );
+
+      print("✅ Registration successful for user $userId to event $eventId");
+      return true;
+    } catch (e) {
+      print("❌ Registration Error: $e");
+      return false;
+    }
+  }
+
+  /// **Fetch Events Created by Logged-in User**
+  static Future<List<Map<String, dynamic>>> getMyEvents() async {
+    try {
+      String? userId = await getCurrentUserId(); // ✅ Fetch userId internally
+      if (userId == null) return [];
+
+      final response = await databases.listDocuments(
+        databaseId: databaseId,
+        collectionId: eventCollectionId,
+        queries: [Query.equal('userId', userId)],
+      );
+
+      return response.documents.map((doc) {
+        final data = Map<String, dynamic>.from(doc.data);
+        data['image_url'] = (data['event_image_id'] != null &&
+                data['event_image_id'].isNotEmpty)
+            ? getImageUrl(data['event_image_id'])
+            : "https://via.placeholder.com/250";
+        return data;
+      }).toList();
+    } catch (e) {
+      print('❌ Fetch My Events Error: $e');
+      return [];
     }
   }
 
@@ -325,6 +524,16 @@ class AppwriteService {
     }
   }
 
+  static Future<String?> getUserId() async {
+    try {
+      final response = await account.get();
+      return response.$id; // Return the user ID from Appwrite response
+    } catch (e) {
+      print("Error fetching user ID: $e");
+      return null; // Return null if the user is not logged in or an error occurs
+    }
+  }
+
   // Fetch the current logged-in user's details
   static Future<Map<String, dynamic>?> getCurrentUserDetails() async {
     try {
@@ -343,6 +552,7 @@ class AppwriteService {
       if (documents.documents.isNotEmpty) {
         final userData = documents.documents.first.data;
         return {
+          'userId': user.$id, // ✅ Include User ID
           'name': userData['name'],
           'email': userData['email'],
           'phone': userData['phone'] ?? "Not provided",

@@ -18,11 +18,36 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   TextEditingController _searchController = TextEditingController();
   bool isLoading = true;
   int _selectedIndex = 0;
+  String? loggedInUserId; // Declare loggedInUserId variable
 
   @override
   void initState() {
     super.initState();
+    fetchLoggedInUserId(); // Fetch user ID when screen loads
     fetchVerifiedEvents();
+  }
+
+  // Fetch logged-in user's ID from Appwrite
+  Future<void> fetchLoggedInUserId() async {
+    try {
+      String? userId =
+          await AppwriteService.getUserId(); // Fetch logged-in user's ID
+      if (userId != null) {
+        setState(() {
+          loggedInUserId = userId;
+        });
+      } else {
+        print("⚠️ User ID is null, the user may not be logged in.");
+        setState(() {
+          loggedInUserId = null;
+        });
+      }
+    } catch (e) {
+      print("Error fetching user ID: $e");
+      setState(() {
+        loggedInUserId = null;
+      });
+    }
   }
 
   Future<void> fetchVerifiedEvents() async {
@@ -30,22 +55,32 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     try {
       List<Map<String, dynamic>> fetchedEvents =
           await AppwriteService.getVerifiedEvents();
+      print(
+          "🔍 Fetched events: $fetchedEvents"); // Print the fetched events to check structure
+
       DateTime todayDate = DateTime.now();
 
       // Filtering events that are still ongoing or upcoming
       List<Map<String, dynamic>> validEvents = fetchedEvents.where((event) {
         if (!event.containsKey("event_date") || event["event_date"].isEmpty) {
+          print("❌ Event date missing for event: $event");
           return false; // Ignore events without dates
         }
         try {
           List<String> dateRange = event["event_date"].split(" → ");
-          if (dateRange.length != 2) return false;
+          if (dateRange.length != 2) {
+            print("❌ Invalid date format for event: $event");
+            return false; // Ignore events with invalid date format
+          }
+
+          print("🔍 Parsed date range for event: $dateRange");
 
           DateTime endDate =
               DateFormat('yyyy-MM-dd').parse(dateRange[1].trim());
           return todayDate.isBefore(endDate) ||
               todayDate.isAtSameMomentAs(endDate);
         } catch (e) {
+          print("❌ Error parsing date for event: $event, Error: $e");
           return false;
         }
       }).toList();
@@ -65,6 +100,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 todayDate.isAtSameMomentAs(endDate) ||
                 (todayDate.isAfter(startDate) && todayDate.isBefore(endDate));
           } catch (e) {
+            print(
+                "❌ Error processing today’s event date for event: $event, Error: $e");
             return false;
           }
         }).toList();
@@ -145,13 +182,35 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                           items: todayEvents.map((event) {
                             return GestureDetector(
                               onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        EventFullDetailsScreen(event: event),
-                                  ),
-                                );
+                                // Assign event_id manually for testing
+                                event["event_id"] =
+                                    "67e91f3320ec1055084b"; // Manually set the event_id
+
+                                print("🔍 onTap triggered!");
+                                print("🔍 Event data: $event");
+                                print(
+                                    "🔍 Checking eventId: ${event["event_id"]}");
+
+                                // Check if event_id is present
+                                if (event != null &&
+                                    event["event_id"] != null) {
+                                  print("🔍 Event ID: ${event["event_id"]}");
+
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          EventFullDetailsScreen(
+                                        event: event, // The event data
+                                        userId:
+                                            loggedInUserId, // Pass userId here
+                                      ),
+                                    ),
+                                  );
+                                } else {
+                                  print(
+                                      "❌ Event ID is missing or event data is invalid!");
+                                }
                               },
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(12),
@@ -220,13 +279,24 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                               trailing:
                                   const Icon(Icons.arrow_forward_ios, size: 18),
                               onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        EventFullDetailsScreen(event: event),
-                                  ),
-                                );
+                                if (loggedInUserId != null) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          EventFullDetailsScreen(
+                                        event: event,
+                                        userId:
+                                            loggedInUserId, // Pass user ID here too
+                                      ),
+                                    ),
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                        content: Text("User not logged in")),
+                                  );
+                                }
                               },
                             ),
                           );

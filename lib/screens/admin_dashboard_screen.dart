@@ -21,7 +21,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   void _fetchEventRegistrations() async {
     List<Map<String, dynamic>> events =
-        await AppwriteService.getEventRegistrations();
+        await AppwriteService.getUnverifiedEvents();
 
     DateTime currentDate = DateTime.now();
     DateTime today =
@@ -180,7 +180,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ),
                   Text("Organizer: ${event['name'] ?? 'Unknown'}"),
                   Text("Date: ${event['event_date'] ?? 'Unknown'}"),
-                  Text("Registration Link: ${event['link'] ?? 'unknown'}"),
+                  Text(
+                      "Participants: ${event['no_participants'] ?? 'unknown'}"),
                   if (isDuplicate) // 🛑 Show a warning if it's a duplicate
                     Padding(
                       padding: const EdgeInsets.only(top: 5),

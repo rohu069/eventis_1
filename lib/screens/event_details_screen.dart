@@ -7,116 +7,107 @@ import 'package:new_event/screens/user_details_screen.dart';
 import 'package:intl/intl.dart';
 
 class EventDetailsScreen extends StatefulWidget {
+  const EventDetailsScreen({Key? key}) : super(key: key);
+
   @override
   _EventDetailsScreenState createState() => _EventDetailsScreenState();
 }
 
 class _EventDetailsScreenState extends State<EventDetailsScreen> {
-  List<Map<String, dynamic>> events = [];
-  List<Map<String, dynamic>> todayEvents = [];
-  List<Map<String, dynamic>> filteredEvents = [];
-  TextEditingController _searchController = TextEditingController();
-  bool isLoading = true;
+  final List<Map<String, dynamic>> _events = [];
+  final List<Map<String, dynamic>> _todayEvents = [];
+  List<Map<String, dynamic>> _filteredEvents = [];
+  final TextEditingController _searchController = TextEditingController();
+  bool _isLoading = true;
   int _selectedIndex = 0;
-  String? loggedInUserId; // Declare loggedInUserId variable
+  String? _loggedInUserId;
 
   @override
   void initState() {
     super.initState();
-    fetchLoggedInUserId(); // Fetch user ID when screen loads
-    fetchVerifiedEvents();
+    _fetchLoggedInUserId();
+    _fetchVerifiedEvents();
   }
 
-  // Fetch logged-in user's ID from Appwrite
-  Future<void> fetchLoggedInUserId() async {
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchLoggedInUserId() async {
     try {
-      String? userId =
-          await AppwriteService.getUserId(); // Fetch logged-in user's ID
-      if (userId != null) {
-        setState(() {
-          loggedInUserId = userId;
-        });
-      } else {
-        print("⚠️ User ID is null, the user may not be logged in.");
-        setState(() {
-          loggedInUserId = null;
-        });
-      }
-    } catch (e) {
-      print("Error fetching user ID: $e");
+      final userId = await AppwriteService.getUserId();
       setState(() {
-        loggedInUserId = null;
+        _loggedInUserId = userId;
+      });
+    } catch (e) {
+      debugPrint("Error fetching user ID: $e");
+      setState(() {
+        _loggedInUserId = null;
       });
     }
   }
 
-  Future<void> fetchVerifiedEvents() async {
-    setState(() => isLoading = true);
+  Future<void> _fetchVerifiedEvents() async {
+    setState(() => _isLoading = true);
     try {
-      List<Map<String, dynamic>> fetchedEvents =
-          await AppwriteService.getVerifiedEvents();
-      print(
-          "🔍 Fetched events: $fetchedEvents"); // Print the fetched events to check structure
+      final fetchedEvents = await AppwriteService.getVerifiedEvents();
+      final todayDate = DateTime.now();
 
-      DateTime todayDate = DateTime.now();
-
-      // Filtering events that are still ongoing or upcoming
-      List<Map<String, dynamic>> validEvents = fetchedEvents.where((event) {
+      // Filter valid events (ongoing or upcoming)
+      final validEvents = fetchedEvents.where((event) {
         if (!event.containsKey("event_date") || event["event_date"].isEmpty) {
-          print("❌ Event date missing for event: $event");
-          return false; // Ignore events without dates
+          return false;
         }
+
         try {
-          List<String> dateRange = event["event_date"].split(" → ");
-          if (dateRange.length != 2) {
-            print("❌ Invalid date format for event: $event");
-            return false; // Ignore events with invalid date format
-          }
+          final dateRange = event["event_date"].split(" → ");
+          if (dateRange.length != 2) return false;
 
-          print("🔍 Parsed date range for event: $dateRange");
-
-          DateTime endDate =
-              DateFormat('yyyy-MM-dd').parse(dateRange[1].trim());
+          final endDate = DateFormat('yyyy-MM-dd').parse(dateRange[1].trim());
           return todayDate.isBefore(endDate) ||
               todayDate.isAtSameMomentAs(endDate);
         } catch (e) {
-          print("❌ Error parsing date for event: $event, Error: $e");
+          debugPrint("Error parsing date: $e");
+          return false;
+        }
+      }).toList();
+
+      // Filter today's events
+      final todayEvents = validEvents.where((event) {
+        try {
+          final dateRange = event["event_date"].split(" → ");
+          final startDate = DateFormat('yyyy-MM-dd').parse(dateRange[0].trim());
+          final endDate = DateFormat('yyyy-MM-dd').parse(dateRange[1].trim());
+
+          return todayDate.isAtSameMomentAs(startDate) ||
+              todayDate.isAtSameMomentAs(endDate) ||
+              (todayDate.isAfter(startDate) && todayDate.isBefore(endDate));
+        } catch (e) {
           return false;
         }
       }).toList();
 
       setState(() {
-        events = validEvents; // Store only valid events
-        filteredEvents = validEvents; // Update the filtered list
+        _events.clear();
+        _events.addAll(validEvents);
 
-        todayEvents = validEvents.where((event) {
-          try {
-            List<String> dateRange = event["event_date"].split(" → ");
-            DateTime startDate =
-                DateFormat('yyyy-MM-dd').parse(dateRange[0].trim());
-            DateTime endDate =
-                DateFormat('yyyy-MM-dd').parse(dateRange[1].trim());
-            return todayDate.isAtSameMomentAs(startDate) ||
-                todayDate.isAtSameMomentAs(endDate) ||
-                (todayDate.isAfter(startDate) && todayDate.isBefore(endDate));
-          } catch (e) {
-            print(
-                "❌ Error processing today’s event date for event: $event, Error: $e");
-            return false;
-          }
-        }).toList();
+        _todayEvents.clear();
+        _todayEvents.addAll(todayEvents);
 
-        isLoading = false;
+        _filteredEvents = List.from(_events);
+        _isLoading = false;
       });
     } catch (e) {
-      setState(() => isLoading = false);
-      print("Error fetching events: $e");
+      setState(() => _isLoading = false);
+      debugPrint("Error fetching events: $e");
     }
   }
 
   void _filterEvents(String query) {
     setState(() {
-      filteredEvents = events.where((event) {
+      _filteredEvents = _events.where((event) {
         return event["event_name"].toLowerCase().contains(query.toLowerCase());
       }).toList();
     });
@@ -126,193 +117,425 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     setState(() {
       _selectedIndex = index;
     });
+
     if (index == 1) {
-      Navigator.push(context,
-          MaterialPageRoute(builder: (context) => EventRegistrationScreen()));
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => const EventRegistrationScreen()));
     } else if (index == 2) {
       Navigator.push(context,
-          MaterialPageRoute(builder: (context) => UserDetailsScreen()));
+          MaterialPageRoute(builder: (context) => const UserDetailsScreen()));
+    }
+  }
+
+  void _navigateToEventDetails(Map<String, dynamic> event) {
+    if (_loggedInUserId != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => EventFullDetailsScreen(
+            event: event,
+            userId: _loggedInUserId,
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please log in to view event details"),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(title: const Text('Event Details')),
-      body: isLoading
+      backgroundColor: Colors.grey[50],
+      appBar: AppBar(
+        title: const Text(
+          'Events',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        elevation: 0,
+        centerTitle: true,
+      ),
+      body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : events.isEmpty
-              ? const Center(child: Text('No verified events available'))
-              : Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: _filterEvents,
-                        decoration: InputDecoration(
-                          hintText: "Search events...",
-                          prefixIcon: const Icon(Icons.search),
-                          suffixIcon: _searchController.text.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    _filterEvents("");
-                                  },
-                                )
-                              : null,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (todayEvents.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        child: CarouselSlider(
-                          options: CarouselOptions(
-                            height: 180,
-                            autoPlay: todayEvents.length > 1,
-                            enlargeCenterPage: true,
-                            viewportFraction: 0.9,
-                          ),
-                          items: todayEvents.map((event) {
-                            return GestureDetector(
-                              onTap: () {
-                                // Assign event_id manually for testing
-                                event["event_id"] =
-                                    "67e91f3320ec1055084b"; // Manually set the event_id
-
-                                print("🔍 onTap triggered!");
-                                print("🔍 Event data: $event");
-                                print(
-                                    "🔍 Checking eventId: ${event["event_id"]}");
-
-                                // Check if event_id is present
-                                if (event != null &&
-                                    event["event_id"] != null) {
-                                  print("🔍 Event ID: ${event["event_id"]}");
-
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          EventFullDetailsScreen(
-                                        event: event, // The event data
-                                        userId:
-                                            loggedInUserId, // Pass userId here
-                                      ),
-                                    ),
-                                  );
-                                } else {
-                                  print(
-                                      "❌ Event ID is missing or event data is invalid!");
-                                }
-                              },
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: Stack(
-                                  fit: StackFit.expand,
-                                  children: [
-                                    Image.network(
-                                      event["image_url"]!,
-                                      fit: BoxFit.cover,
-                                    ),
-                                    Positioned(
-                                      bottom: 10,
-                                      left: 10,
-                                      child: Container(
-                                        padding: EdgeInsets.all(8),
-                                        color: Colors.black54,
-                                        child: Text(
-                                          event["event_name"],
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    Expanded(
-                      child: ListView.builder(
-                        padding: EdgeInsets.zero,
-                        itemCount: filteredEvents.length,
-                        itemBuilder: (context, index) {
-                          final event = filteredEvents[index];
-                          return Card(
-                            elevation: 3,
-                            margin: const EdgeInsets.symmetric(
-                                vertical: 8, horizontal: 5),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                            child: ListTile(
-                              contentPadding: const EdgeInsets.all(10),
-                              leading: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.network(
-                                  event["image_url"]!,
-                                  width: 60,
-                                  height: 60,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                              title: Text(event["event_name"],
-                                  style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold)),
-                              subtitle: Text(
-                                "${event["event_date"]} | ${event["event_venue"]}",
-                                style: TextStyle(
-                                    fontSize: 14, color: Colors.grey.shade700),
-                              ),
-                              trailing:
-                                  const Icon(Icons.arrow_forward_ios, size: 18),
-                              onTap: () {
-                                if (loggedInUserId != null) {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          EventFullDetailsScreen(
-                                        event: event,
-                                        userId:
-                                            loggedInUserId, // Pass user ID here too
-                                      ),
-                                    ),
-                                  );
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                        content: Text("User not logged in")),
-                                  );
-                                }
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
+          : _events.isEmpty
+              ? _buildEmptyState()
+              : _buildEventsList(),
       bottomNavigationBar: BottomNavigationBar(
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.add), label: 'Register'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+          BottomNavigationBarItem(icon: Icon(Icons.event), label: 'Events'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.add_circle_outline), label: 'Create'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline), label: 'Profile'),
         ],
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
+        selectedItemColor: Theme.of(context).primaryColor,
+        unselectedItemColor: Colors.grey,
+        type: BottomNavigationBarType.fixed,
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.event_busy, size: 80, color: Colors.grey[400]),
+          const SizedBox(height: 16),
+          Text(
+            'No events available',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Check back later for upcoming events',
+            style: TextStyle(color: Colors.grey[600]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEventsList() {
+    return Column(
+      children: [
+        // Search bar
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: TextField(
+            controller: _searchController,
+            onChanged: _filterEvents,
+            decoration: InputDecoration(
+              hintText: "Search events",
+              hintStyle: TextStyle(color: Colors.grey[500]),
+              prefixIcon: const Icon(Icons.search, size: 22),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 20),
+                      onPressed: () {
+                        _searchController.clear();
+                        _filterEvents("");
+                      },
+                    )
+                  : null,
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(vertical: 0),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey[200]!),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide:
+                    BorderSide(color: Theme.of(context).primaryColor, width: 1),
+              ),
+            ),
+          ),
+        ),
+
+        // Today's events carousel
+        if (_todayEvents.isNotEmpty) _buildTodayEventsCarousel(),
+
+        // Section title
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Row(
+            children: [
+              Text(
+                'All Events',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${_filteredEvents.length} events',
+                style: TextStyle(color: Colors.grey[600], fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+
+        // Events list
+        Expanded(
+          child: _filteredEvents.isEmpty
+              ? Center(
+                  child: Text(
+                    'No matching events found',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                )
+              : ListView.builder(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.only(bottom: 16),
+                  itemCount: _filteredEvents.length,
+                  itemBuilder: (context, index) {
+                    final event = _filteredEvents[index];
+                    return _buildEventCard(event);
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTodayEventsCarousel() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'TODAY',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                "Happening now",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[800],
+                ),
+              ),
+            ],
+          ),
+        ),
+        CarouselSlider(
+          options: CarouselOptions(
+            height: 180,
+            autoPlay: _todayEvents.length > 1,
+            enlargeCenterPage: true,
+            viewportFraction: 0.9,
+            aspectRatio: 16 / 9,
+            autoPlayAnimationDuration: const Duration(milliseconds: 800),
+            autoPlayInterval: const Duration(seconds: 5),
+          ),
+          items: _todayEvents.map((event) {
+            return GestureDetector(
+              onTap: () => _navigateToEventDetails(event),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      // Image with gradient overlay
+                      ShaderMask(
+                        shaderCallback: (rect) {
+                          return LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withOpacity(0.8),
+                            ],
+                            stops: const [0.5, 1.0],
+                          ).createShader(rect);
+                        },
+                        blendMode: BlendMode.darken,
+                        child: Image.network(
+                          event["image_url"]!,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+
+                      // Event info overlay
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                event["event_name"],
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.location_on,
+                                    color: Colors.white70,
+                                    size: 14,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      event["event_venue"],
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 14,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEventCard(Map<String, dynamic> event) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.grey[200]!, width: 1),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => _navigateToEventDetails(event),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              // Event image
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox(
+                  width: 70,
+                  height: 70,
+                  child: Image.network(
+                    event["image_url"]!,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 16),
+
+              // Event details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      event["event_name"],
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.calendar_today,
+                            size: 14, color: Colors.grey[600]),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            event["event_date"],
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.location_on,
+                            size: 14, color: Colors.grey[600]),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            event["event_venue"],
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Arrow icon
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: Colors.grey[400],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

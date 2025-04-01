@@ -21,8 +21,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // Appwrite Client
   final Client client = Client()
-    ..setEndpoint('https://cloud.appwrite.io/v1') // Correct endpoint
-    ..setProject('67aa277600042d235f09'); // Replace with your project ID
+    ..setEndpoint('https://cloud.appwrite.io/v1')
+    ..setProject('67aa277600042d235f09');
 
   late final Account account;
 
@@ -41,9 +41,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       await account.deleteSessions();
-      print("🔄 Previous session cleared.");
     } catch (_) {
-      print("⚠ No previous session found. Proceeding with login...");
+      // Silently continue if no previous session
     }
 
     try {
@@ -53,7 +52,6 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       final loggedInUser = await account.get();
-      print("✅ Successfully logged in: ${loggedInUser.$id}");
 
       if (mounted) {
         setState(() {
@@ -73,7 +71,6 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } on AppwriteException catch (e) {
-      print("❌ Login failed: ${e.message}");
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -110,14 +107,14 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background Image with Parallax Effect
+          // Background with subtle animation
           Positioned.fill(
             child: Animate(
               effects: [
                 ScaleEffect(
-                  begin: const Offset(1.05, 1.05),
+                  begin: const Offset(1.03, 1.03),
                   end: const Offset(1.0, 1.0),
-                  duration: 1500.ms,
+                  duration: 1800.ms,
                   curve: Curves.easeOutQuad,
                 ),
               ],
@@ -128,7 +125,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
 
-          // Gradient Overlay for better text visibility
+          // Elegant overlay gradient
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
@@ -136,8 +133,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.3),
-                    Colors.black.withOpacity(0.7),
+                    Colors.black.withOpacity(0.2),
+                    Colors.black.withOpacity(0.65),
                   ],
                 ),
               ),
@@ -152,52 +149,33 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
-                    // App Logo or Icon (using a placeholder)
-                    Animate(
-                      effects: [
-                        FadeEffect(duration: 800.ms),
-                        ScaleEffect(
-                          begin: const Offset(0.8, 0.8),
-                          end: const Offset(1.0, 1.0),
-                          duration: 800.ms,
-                        ),
-                      ],
-                    ),
-
                     const SizedBox(height: 30),
 
-                    // Welcome Text with Animation
+                    // Welcome Text
                     Animate(
                       effects: [
                         FadeEffect(duration: 600.ms, delay: 300.ms),
                         SlideEffect(
-                          begin: const Offset(0, -0.2),
+                          begin: const Offset(0, -0.1),
                           end: Offset.zero,
                           curve: Curves.easeOut,
                           duration: 600.ms,
                         ),
                       ],
                       child: const Text(
-                        "Welcome Back",
+                        "Welcome",
                         style: TextStyle(
                           fontSize: 32,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w600,
                           color: Colors.white,
-                          letterSpacing: 1.2,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black54,
-                              blurRadius: 5,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ),
 
                     const SizedBox(height: 8),
 
-                    // Subtitle text
+                    // Subtitle
                     Animate(
                       effects: [
                         FadeEffect(duration: 600.ms, delay: 400.ms),
@@ -212,56 +190,79 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 50),
 
-                    // Form with Glass Morphism Effect
+                    // Minimal Form Container
                     Animate(
                       effects: [
                         FadeEffect(duration: 800.ms, delay: 500.ms),
-                        SlideEffect(
-                          begin: const Offset(0, 0.2),
-                          end: Offset.zero,
-                          curve: Curves.easeOut,
-                        ),
                       ],
                       child: Container(
-                        padding: const EdgeInsets.all(24),
+                        padding: const EdgeInsets.all(28),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(20),
+                          color: Colors.black.withOpacity(0.25),
+                          borderRadius: BorderRadius.circular(24),
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.2),
-                            width: 1.5,
+                            color: Colors.white.withOpacity(0.1),
+                            width: 1,
                           ),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(0.1),
-                              blurRadius: 10,
-                              spreadRadius: 2,
+                              blurRadius: 30,
+                              spreadRadius: 0,
                             ),
                           ],
                         ),
                         child: Form(
                           key: _formKey,
                           child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // Email field label
+                              const Padding(
+                                padding: EdgeInsets.only(left: 8, bottom: 8),
+                                child: Text(
+                                  "Email",
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
                               _buildTextField(
                                 controller: _emailController,
-                                hint: "Email",
+                                hint: "your@email.com",
                                 obscureText: false,
                                 icon: Icons.email_outlined,
                               ),
-                              const SizedBox(height: 20),
+
+                              const SizedBox(height: 24),
+
+                              // Password field label
+                              const Padding(
+                                padding: EdgeInsets.only(left: 8, bottom: 8),
+                                child: Text(
+                                  "Password",
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
                               _buildTextField(
                                 controller: _passwordController,
-                                hint: "Password",
+                                hint: "••••••••",
                                 obscureText: !_isPasswordVisible,
                                 icon: Icons.lock_outline,
                                 isPassword: true,
                               ),
+
                               const SizedBox(height: 12),
 
-                              // Forgot Password Link
+                              // Forgot Password
                               Align(
                                 alignment: Alignment.centerRight,
                                 child: TextButton(
@@ -269,7 +270,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     // Handle forgot password
                                   },
                                   style: TextButton.styleFrom(
-                                    foregroundColor: Colors.white70,
+                                    foregroundColor: Colors.white60,
                                     padding: EdgeInsets.zero,
                                     minimumSize: const Size(50, 30),
                                     tapTargetSize:
@@ -279,44 +280,43 @@ class _LoginScreenState extends State<LoginScreen> {
                                     "Forgot Password?",
                                     style: TextStyle(
                                       fontSize: 14,
-                                      fontWeight: FontWeight.w500,
+                                      fontWeight: FontWeight.w400,
                                     ),
                                   ),
                                 ),
                               ),
 
-                              const SizedBox(height: 30),
+                              const SizedBox(height: 32),
 
-                              // Login Button with Loading State
+                              // Sign In Button
                               SizedBox(
                                 width: double.infinity,
-                                height: 55,
+                                height: 56,
                                 child: ElevatedButton(
                                   onPressed: _isLoading ? null : _handleLogin,
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.indigo.shade600,
-                                    foregroundColor: Colors.white,
+                                    backgroundColor: Colors.white,
+                                    foregroundColor: Colors.black87,
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(15),
+                                      borderRadius: BorderRadius.circular(16),
                                     ),
-                                    elevation: 5,
-                                    shadowColor: Colors.indigo.withOpacity(0.5),
+                                    elevation: 0,
                                   ),
                                   child: _isLoading
                                       ? const SizedBox(
                                           width: 24,
                                           height: 24,
                                           child: CircularProgressIndicator(
-                                            color: Colors.white,
-                                            strokeWidth: 3,
+                                            color: Colors.black54,
+                                            strokeWidth: 2.5,
                                           ),
                                         )
                                       : const Text(
                                           "Sign In",
                                           style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                            letterSpacing: 1.2,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            letterSpacing: 0.5,
                                           ),
                                         ),
                                 ),
@@ -329,7 +329,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 30),
 
-                    // Sign-up Text with Animation
+                    // Sign Up Option
                     Animate(
                       effects: [
                         FadeEffect(duration: 800.ms, delay: 800.ms),
@@ -340,7 +340,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           const Text(
                             "Don't have an account?",
                             style: TextStyle(
-                              color: Colors.white70,
+                              color: Colors.white60,
                               fontSize: 15,
                             ),
                           ),
@@ -354,15 +354,14 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: const Text(
                               "Sign Up",
                               style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
                               ),
                             ),
                           ),
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 20),
                   ],
                 ),
@@ -374,7 +373,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Enhanced Text Field with Icon
+  // Minimal, elegant text field
   Widget _buildTextField({
     required TextEditingController controller,
     required String hint,
@@ -384,10 +383,10 @@ class _LoginScreenState extends State<LoginScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(15),
+        color: Colors.white.withOpacity(0.07),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.white.withOpacity(0.3),
+          color: Colors.white.withOpacity(0.1),
           width: 1,
         ),
       ),
@@ -401,13 +400,13 @@ class _LoginScreenState extends State<LoginScreen> {
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: TextStyle(
-            color: Colors.white.withOpacity(0.7),
+            color: Colors.white.withOpacity(0.4),
             fontSize: 16,
           ),
           prefixIcon: Icon(
             icon,
-            color: Colors.white70,
-            size: 22,
+            color: Colors.white60,
+            size: 20,
           ),
           suffixIcon: isPassword
               ? IconButton(
@@ -415,8 +414,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     _isPasswordVisible
                         ? Icons.visibility_off
                         : Icons.visibility,
-                    color: Colors.white70,
-                    size: 22,
+                    color: Colors.white60,
+                    size: 20,
                   ),
                   onPressed: () {
                     setState(() {
@@ -427,7 +426,7 @@ class _LoginScreenState extends State<LoginScreen> {
               : null,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
-            vertical: 18,
+            vertical: 16,
           ),
           border: InputBorder.none,
           errorStyle: const TextStyle(
@@ -436,7 +435,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
         validator: (value) =>
-            value == null || value.isEmpty ? 'Please enter your $hint' : null,
+            value == null || value.isEmpty ? 'This field is required' : null,
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:new_event/services/appwrite_service.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AddEventScreen extends StatefulWidget {
   final Map<String, dynamic>? event;
@@ -19,8 +20,9 @@ class _AddEventScreenState extends State<AddEventScreen> {
   final TextEditingController venueController = TextEditingController();
   final TextEditingController linkController = TextEditingController();
   final TextEditingController maxParticipantsController =
-      TextEditingController(); // New field
+      TextEditingController();
   String? imageUrl;
+  bool isLoading = false;
 
   @override
   void initState() {
@@ -35,8 +37,6 @@ class _AddEventScreenState extends State<AddEventScreen> {
       venueController.text = widget.event!['event_venue'] ?? '';
       linkController.text = widget.event!['link'] ?? '';
       imageUrl = widget.event!['image_url'];
-
-      // Set max participants (default to 0 if null)
       maxParticipantsController.text =
           (widget.event!['no_participants'] ?? 0).toString();
     }
@@ -45,16 +45,19 @@ class _AddEventScreenState extends State<AddEventScreen> {
   void verifyEvent() async {
     if (widget.event == null || widget.event!['\$id'] == null) return;
 
+    setState(() => isLoading = true);
+
     bool success = await AppwriteService.verifyEvent(widget.event!['\$id']);
+
+    setState(() => isLoading = false);
+
+    if (!mounted) return;
+
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Event verified successfully!")),
-      );
+      _showSnackBar("Event verified successfully", Colors.green);
       Navigator.pop(context, true);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Failed to verify event")),
-      );
+      _showSnackBar("Failed to verify event", Colors.red);
     }
   }
 
@@ -64,35 +67,65 @@ class _AddEventScreenState extends State<AddEventScreen> {
     bool confirmDelete = await _confirmDeleteDialog();
     if (!confirmDelete) return;
 
+    setState(() => isLoading = true);
+
     bool success = await AppwriteService.deleteEvent(widget.event!['\$id']);
+
+    setState(() => isLoading = false);
+
+    if (!mounted) return;
+
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Event deleted successfully!")),
-      );
+      _showSnackBar("Event deleted successfully", Colors.green);
       Navigator.pop(context, true);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Failed to delete event")),
-      );
+      _showSnackBar("Failed to delete event", Colors.red);
     }
+  }
+
+  void _showSnackBar(String message, Color backgroundColor) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(color: Colors.white)),
+        backgroundColor: backgroundColor,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(10),
+      ),
+    );
   }
 
   Future<bool> _confirmDeleteDialog() async {
     return await showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text("Delete Event"),
-            content: const Text(
-                "Are you sure you want to delete this event? This action cannot be undone."),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Text(
+              "Delete Event",
+              style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+            ),
+            content: Text(
+              "Are you sure you want to delete this event? This action cannot be undone.",
+              style: GoogleFonts.poppins(),
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text("Cancel"),
+                child: Text(
+                  "Cancel",
+                  style: GoogleFonts.poppins(color: Colors.grey[700]),
+                ),
               ),
-              TextButton(
+              ElevatedButton(
                 onPressed: () => Navigator.pop(context, true),
-                style: TextButton.styleFrom(foregroundColor: Colors.red),
-                child: const Text("Delete"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+                child: Text("Delete", style: GoogleFonts.poppins()),
               ),
             ],
           ),
@@ -102,193 +135,359 @@ class _AddEventScreenState extends State<AddEventScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Verify Event',
-            style: TextStyle(fontWeight: FontWeight.bold)),
-        centerTitle: true,
         elevation: 0,
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              theme.colorScheme.surface,
-              theme.colorScheme.surfaceVariant
-            ],
+        backgroundColor: Colors.white,
+        centerTitle: true,
+        title: Text(
+          'Event Verification',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+            fontSize: 18,
           ),
         ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (imageUrl != null && imageUrl!.trim().isNotEmpty)
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Image.network(
-                      imageUrl!,
-                      width: double.infinity,
-                      height: 300,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          height: 300,
-                          width: double.infinity,
-                          color: Colors.grey[200],
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                  : null,
+        leading: IconButton(
+          icon:
+              const Icon(Icons.arrow_back_ios, size: 20, color: Colors.black87),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SafeArea(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (imageUrl != null && imageUrl!.trim().isNotEmpty)
+                      Container(
+                        height: 240,
+                        width: double.infinity,
+                        margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
                             ),
-                          ),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          height: 300,
-                          width: double.infinity,
-                          color: Colors.grey[200],
-                          child: const Center(
-                            child: Icon(Icons.error_outline,
-                                size: 50, color: Colors.red),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 24),
-              Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Event Details",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                          ],
+                        ),
+                        child: Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Image.network(
+                                imageUrl!,
+                                width: double.infinity,
+                                height: 240,
+                                fit: BoxFit.cover,
+                                loadingBuilder:
+                                    (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return Container(
+                                    height: 240,
+                                    width: double.infinity,
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[200],
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: Center(
+                                      child: CircularProgressIndicator(
+                                        value: loadingProgress
+                                                    .expectedTotalBytes !=
+                                                null
+                                            ? loadingProgress
+                                                    .cumulativeBytesLoaded /
+                                                loadingProgress
+                                                    .expectedTotalBytes!
+                                            : null,
+                                        color: Colors.grey[400],
+                                      ),
+                                    ),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    height: 240,
+                                    width: double.infinity,
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[200],
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.broken_image_outlined,
+                                            size: 50, color: Colors.grey[400]),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          "Image not available",
+                                          style: GoogleFonts.poppins(
+                                              color: Colors.grey[600]),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              left: 0,
+                              right: 0,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 12, horizontal: 16),
+                                decoration: BoxDecoration(
+                                  borderRadius: const BorderRadius.vertical(
+                                      bottom: Radius.circular(16)),
+                                  gradient: LinearGradient(
+                                    begin: Alignment.bottomCenter,
+                                    end: Alignment.topCenter,
+                                    colors: [
+                                      Colors.black.withOpacity(0.7),
+                                      Colors.transparent,
+                                    ],
+                                  ),
+                                ),
+                                child: Text(
+                                  eventNameController.text,
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      _buildInfoField(
-                          icon: Icons.event,
-                          label: 'Event Name',
-                          controller: eventNameController),
-                      _buildInfoField(
-                          icon: Icons.person,
-                          label: 'Organizer',
-                          controller: organizerController),
-                      _buildInfoField(
-                          icon: Icons.business,
-                          label: 'Department',
-                          controller: departmentController),
-                      _buildInfoField(
-                          icon: Icons.group,
-                          label: 'Batch',
-                          controller: batchController),
-                      _buildInfoField(
-                          icon: Icons.calendar_today,
-                          label: 'Date',
-                          controller: dateController),
-                      _buildInfoField(
-                          icon: Icons.location_on,
-                          label: 'Venue',
-                          controller: venueController),
-                      _buildInfoField(
-                          icon: Icons.link,
-                          label: 'Registration Link',
-                          controller: linkController),
-                      _buildInfoField(
-                          icon: Icons.people,
-                          label: 'Max Participants',
-                          controller: maxParticipantsController),
-                    ],
-                  ),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Event Details Section
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(Icons.event_note,
+                                    color: Colors.blue),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                "Event Information",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Event Details Card
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              children: [
+                                _buildInfoItem(
+                                  icon: Icons.event,
+                                  label: 'Event Name',
+                                  value: eventNameController.text,
+                                ),
+                                _buildDivider(),
+                                _buildInfoItem(
+                                  icon: Icons.person,
+                                  label: 'Organizer',
+                                  value: organizerController.text,
+                                ),
+                                _buildDivider(),
+                                _buildInfoItem(
+                                  icon: Icons.business,
+                                  label: 'Department',
+                                  value: departmentController.text,
+                                ),
+                                _buildDivider(),
+                                _buildInfoItem(
+                                  icon: Icons.group,
+                                  label: 'Batch',
+                                  value: batchController.text,
+                                ),
+                                _buildDivider(),
+                                _buildInfoItem(
+                                  icon: Icons.calendar_today,
+                                  label: 'Date',
+                                  value: dateController.text,
+                                ),
+                                _buildDivider(),
+                                _buildInfoItem(
+                                  icon: Icons.location_on,
+                                  label: 'Venue',
+                                  value: venueController.text,
+                                ),
+                                if (linkController.text.isNotEmpty) ...[
+                                  _buildDivider(),
+                                  _buildInfoItem(
+                                    icon: Icons.link,
+                                    label: 'Registration Link',
+                                    value: linkController.text,
+                                    isLink: true,
+                                  ),
+                                ],
+                                _buildDivider(),
+                                _buildInfoItem(
+                                  icon: Icons.people,
+                                  label: 'Max Participants',
+                                  value: maxParticipantsController.text,
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          // Action Buttons
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: verifyEvent,
+                                  icon: const Icon(Icons.check_circle_outline),
+                                  label: Text(
+                                    "Verify Event",
+                                    style: GoogleFonts.poppins(
+                                        fontWeight: FontWeight.w500),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 14),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12)),
+                                    elevation: 0,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: deleteEvent,
+                                  icon: const Icon(Icons.delete_outline),
+                                  label: Text(
+                                    "Delete Event",
+                                    style: GoogleFonts.poppins(
+                                        fontWeight: FontWeight.w500),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Colors.red,
+                                    side: const BorderSide(color: Colors.red),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 14),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12)),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: verifyEvent,
-                      icon: const Icon(Icons.check_circle_outline,
-                          color: Colors.white),
-                      label: const Text("Verify Event",
-                          style: TextStyle(color: Colors.white)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: deleteEvent,
-                      icon:
-                          const Icon(Icons.delete_outline, color: Colors.white),
-                      label: const Text("Delete Event",
-                          style: TextStyle(color: Colors.white)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            ),
+    );
+  }
+
+  Widget _buildInfoItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    bool isLink = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 20, color: Colors.blue),
           ),
-        ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: GoogleFonts.poppins(
+                    fontSize: 15,
+                    color: isLink ? Colors.blue : Colors.black87,
+                    fontWeight: isLink ? FontWeight.w500 : FontWeight.normal,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildInfoField(
-      {required IconData icon,
-      required String label,
-      required TextEditingController controller}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: TextField(
-        controller: controller,
-        decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon)),
-        readOnly: true,
-      ),
+  Widget _buildDivider() {
+    return Divider(
+      height: 1,
+      thickness: 1,
+      color: Colors.grey[200],
+      indent: 16,
+      endIndent: 16,
     );
   }
 }

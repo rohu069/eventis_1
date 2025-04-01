@@ -13,6 +13,8 @@ class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _flipAnimation;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
@@ -20,7 +22,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     // Set up animation controller
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 1800),
+      duration: const Duration(milliseconds: 2000),
       vsync: this,
     );
 
@@ -31,8 +33,29 @@ class _SplashScreenState extends State<SplashScreen>
     ).animate(
       CurvedAnimation(
         parent: _controller,
-        // Using elasticOut for a bouncy finish to the rotation
-        curve: Curves.easeOutBack,
+        curve: Interval(0.0, 0.7, curve: Curves.easeOutBack),
+      ),
+    );
+
+    // Fade in animation
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Interval(0.0, 0.5, curve: Curves.easeIn),
+      ),
+    );
+
+    // Scale animation
+    _scaleAnimation = Tween<double>(
+      begin: 0.85,
+      end: 1.0,
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Interval(0.5, 0.9, curve: Curves.easeOutCubic),
       ),
     );
 
@@ -40,7 +63,7 @@ class _SplashScreenState extends State<SplashScreen>
     _controller.forward();
 
     // Navigate after the animation completes plus a small delay
-    Timer(const Duration(milliseconds: 2300), () {
+    Timer(const Duration(milliseconds: 2500), () {
       Navigator.pushReplacementNamed(context, '/login');
     });
   }
@@ -54,40 +77,57 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor:
-          Color.fromARGB(255, 255, 255, 255), // Keeping the teal background
-      body: Center(
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            // Create a 3D rotation transform around the Y axis
-            return Transform(
-              alignment: Alignment.center,
-              transform: Matrix4.identity()
-                ..setEntry(3, 2, 0.001) // perspective
-                ..rotateY(_flipAnimation.value),
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 20,
-                      spreadRadius: 2,
+      backgroundColor: Colors.white,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.white,
+              Colors.grey.shade50,
+            ],
+          ),
+        ),
+        child: Center(
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              return FadeTransition(
+                opacity: _fadeAnimation,
+                child: ScaleTransition(
+                  scale: _scaleAnimation,
+                  child: Transform(
+                    alignment: Alignment.center,
+                    transform: Matrix4.identity()
+                      ..setEntry(3, 2, 0.001) // perspective
+                      ..rotateY(_flipAnimation.value),
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.07),
+                            blurRadius: 30,
+                            spreadRadius: 1,
+                            offset: Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Hero(
+                        tag: 'app_logo',
+                        child: Image.asset(
+                          'assets/logo.png',
+                          width: 220,
+                        ),
+                      ),
                     ),
-                  ],
-                ),
-                child: Hero(
-                  tag: 'app_logo',
-                  child: Image.asset(
-                    'assets/logo.png',
-                    width: 280,
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );

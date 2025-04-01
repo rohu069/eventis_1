@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/appwrite_service.dart';
-import 'package:intl/intl.dart'; // Add this package for date formatting
+import 'package:intl/intl.dart';
 
 class EventFullDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> event;
@@ -65,12 +65,10 @@ class _EventFullDetailsScreenState extends State<EventFullDetailsScreen> {
                   foregroundColor: Colors.grey[700],
                 ),
               ),
-              ElevatedButton(
+              FilledButton(
                 onPressed: () => Navigator.of(context).pop(true),
                 child: const Text("Register"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).primaryColor,
-                  foregroundColor: Colors.white,
+                style: FilledButton.styleFrom(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -147,278 +145,320 @@ class _EventFullDetailsScreenState extends State<EventFullDetailsScreen> {
     if (dateString == null || dateString.isEmpty) return "Date not available";
 
     try {
-      // Assuming the date is in a standard format - adjust as needed
       final date = DateTime.parse(dateString);
       return DateFormat('EEEE, MMMM d, y').format(date);
     } catch (e) {
-      return dateString; // Return original if parsing fails
+      return dateString;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     String imageUrl = widget.event["image_url"]?.isNotEmpty == true
         ? widget.event["image_url"]
         : "https://via.placeholder.com/250";
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.event["event_name"] ?? "Event Details"),
-        elevation: 0,
-        centerTitle: true,
-      ),
+      backgroundColor: Colors.white,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Event Image with gradient overlay
-                  Stack(
-                    children: [
-                      Hero(
-                        tag: "eventImage_$imageUrl",
-                        child: Image.network(
-                          imageUrl,
-                          width: double.infinity,
-                          height: 250,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              height: 250,
-                              color: Colors.grey[300],
-                              child: const Center(
-                                child: Icon(Icons.image_not_supported,
-                                    size: 50, color: Colors.grey),
-                              ),
-                            );
-                          },
-                        ),
+          : CustomScrollView(
+              slivers: [
+                // App Bar with Image
+                SliverAppBar(
+                  expandedHeight: 240,
+                  pinned: true,
+                  stretch: true,
+                  backgroundColor: Colors.white,
+                  elevation: 0,
+                  leading: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: CircleAvatar(
+                      backgroundColor: Colors.black26,
+                      child: IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        onPressed: () => Navigator.pop(context),
                       ),
-                      Positioned.fill(
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () => showDialog(
-                              context: context,
-                              builder: (context) => Dialog(
-                                backgroundColor: Colors.transparent,
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: InteractiveViewer(
-                                    panEnabled: true,
-                                    minScale: 0.5,
-                                    maxScale: 3.0,
-                                    child: Image.network(imageUrl,
-                                        fit: BoxFit.contain),
+                    ),
+                  ),
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        // Event Image
+                        Hero(
+                          tag: "eventImage_$imageUrl",
+                          child: Image.network(
+                            imageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey[200],
+                                child: const Center(
+                                  child: Icon(Icons.image_not_supported,
+                                      size: 50, color: Colors.grey),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        // Gradient Overlay
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.transparent,
+                                  Colors.black.withOpacity(0.7),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Image Viewer on Tap
+                        Positioned.fill(
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () => showDialog(
+                                context: context,
+                                builder: (context) => Dialog(
+                                  backgroundColor: Colors.transparent,
+                                  insetPadding: const EdgeInsets.all(12),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: InteractiveViewer(
+                                      panEnabled: true,
+                                      minScale: 0.5,
+                                      maxScale: 3.0,
+                                      child: Image.network(imageUrl,
+                                          fit: BoxFit.contain),
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      // Title overlay at the bottom of the image
-                      Positioned(
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.bottomCenter,
-                              end: Alignment.topCenter,
-                              colors: [
-                                Colors.black.withOpacity(0.7),
-                                Colors.transparent,
-                              ],
-                            ),
-                          ),
+                        // Event Title
+                        Positioned(
+                          bottom: 16,
+                          left: 16,
+                          right: 16,
                           child: Text(
                             widget.event["event_name"] ?? "Unknown Event",
                             style: const TextStyle(
-                              fontSize: 24,
+                              fontSize: 26,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
+                              shadows: [
+                                Shadow(
+                                  offset: Offset(0, 1),
+                                  blurRadius: 3.0,
+                                  color: Color.fromARGB(150, 0, 0, 0),
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+                ),
 
-                  // Event details in a card
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Card(
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
+                // Event Content
+                SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Main Details Card
+                      Container(
+                        margin: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Event date
-                            ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              leading: CircleAvatar(
-                                backgroundColor: Theme.of(context)
-                                    .primaryColor
-                                    .withOpacity(0.1),
-                                child: Icon(
-                                  Icons.calendar_today,
-                                  color: Theme.of(context).primaryColor,
-                                ),
-                              ),
-                              title: const Text("Date and Time",
-                                  style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500)),
-                              subtitle: Text(
-                                _formatDate(widget.event["event_date"]),
-                                style: const TextStyle(fontSize: 15),
-                              ),
+                            // Date & Time
+                            _buildDetailRow(
+                              context,
+                              Icons.calendar_today,
+                              "Date and Time",
+                              _formatDate(widget.event["event_date"]),
                             ),
 
-                            const Divider(),
+                            const Divider(height: 1, indent: 64),
 
-                            // Event venue
-                            ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              leading: CircleAvatar(
-                                backgroundColor: Theme.of(context)
-                                    .primaryColor
-                                    .withOpacity(0.1),
-                                child: Icon(
-                                  Icons.location_on,
-                                  color: Theme.of(context).primaryColor,
-                                ),
-                              ),
-                              title: const Text("Venue",
-                                  style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500)),
-                              subtitle: Text(
-                                widget.event["event_venue"] ??
-                                    "Venue not specified",
-                                style: const TextStyle(fontSize: 15),
-                              ),
+                            // Venue
+                            _buildDetailRow(
+                              context,
+                              Icons.location_on,
+                              "Venue",
+                              widget.event["event_venue"] ??
+                                  "Venue not specified",
                             ),
 
-                            const Divider(),
+                            const Divider(height: 1, indent: 64),
 
-                            // Event category
-                            ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              leading: CircleAvatar(
-                                backgroundColor: Theme.of(context)
-                                    .primaryColor
-                                    .withOpacity(0.1),
-                                child: Icon(
-                                  Icons.category,
-                                  color: Theme.of(context).primaryColor,
-                                ),
-                              ),
-                              title: const Text("Category",
-                                  style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500)),
-                              subtitle: Text(
-                                widget.event["category"] ?? "Uncategorized",
-                                style: const TextStyle(fontSize: 15),
-                              ),
+                            // Category
+                            _buildDetailRow(
+                              context,
+                              Icons.category,
+                              "Category",
+                              widget.event["category"] ?? "Uncategorized",
                             ),
                           ],
                         ),
                       ),
-                    ),
-                  ),
 
-                  // Description section (if available)
-                  if (widget.event["description"] != null &&
-                      widget.event["description"].isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Card(
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
+                      // Description Section
+                      if (widget.event["description"] != null &&
+                          widget.event["description"].isNotEmpty)
+                        Container(
+                          margin: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.04),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          padding: const EdgeInsets.all(20),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 "About the Event",
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
+                                  color: colorScheme.primary,
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 12),
                               Text(
                                 widget.event["description"],
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 15,
-                                  color: Colors.grey[800],
-                                  height: 1.4,
+                                  color: Colors.black87,
+                                  height: 1.5,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      ),
-                    ),
 
-                  // Registration button
-                  Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: _isRegistered ? null : _registerForEvent,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _isRegistered
-                              ? Colors.grey[300]
-                              : Theme.of(context).primaryColor,
-                          foregroundColor: Colors.white,
-                          disabledForegroundColor: Colors.grey[600],
-                          disabledBackgroundColor: Colors.grey[300],
-                          elevation: _isRegistered ? 0 : 3,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(_isRegistered
-                                ? Icons.check_circle
-                                : Icons.app_registration),
-                            const SizedBox(width: 8),
-                            Text(
-                              _isRegistered
-                                  ? "Already Registered"
-                                  : "Register Now",
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+                      // Registration Button
+                      Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 54,
+                          child: _isRegistered
+                              ? OutlinedButton.icon(
+                                  onPressed: null,
+                                  icon: const Icon(Icons.check_circle),
+                                  label: const Text(
+                                    "Already Registered",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    side:
+                                        BorderSide(color: colorScheme.outline),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                )
+                              : FilledButton.icon(
+                                  onPressed: _registerForEvent,
+                                  icon: const Icon(Icons.app_registration),
+                                  label: const Text(
+                                    "Register Now",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  style: FilledButton.styleFrom(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
+    );
+  }
+
+  Widget _buildDetailRow(
+      BuildContext context, IconData icon, String title, String content) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 22,
+            backgroundColor:
+                Theme.of(context).colorScheme.primary.withOpacity(0.12),
+            child: Icon(
+              icon,
+              color: Theme.of(context).colorScheme.primary,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  content,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

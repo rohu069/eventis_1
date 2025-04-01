@@ -56,11 +56,13 @@ class _EventRegistrationScreenState extends State<EventRegistrationScreen> {
 
   List<String> _eventCategories = [];
 
-  // Theme colors
-  final Color _primaryColor = const Color(0xFF3EBBCA);
-  final Color _backgroundColor = Colors.white;
+  // Enhanced theme colors
+  final Color _primaryColor = const Color(0xFF5BE8E8);
+  final Color _backgroundColor = const Color(0xFFF9FAFC);
   final Color _cardColor = Colors.white;
   final Color _textFieldBgColor = const Color(0xFFF5F7FA);
+  final Color _textColor = const Color(0xFF333333);
+  final Color _secondaryTextColor = const Color(0xFF757575);
 
   @override
   void initState() {
@@ -109,10 +111,12 @@ class _EventRegistrationScreenState extends State<EventRegistrationScreen> {
 
     if (_image == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select an event banner'),
+        SnackBar(
+          content: const Text('Please select an event banner'),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          margin: const EdgeInsets.all(16),
         ),
       );
       return;
@@ -155,6 +159,8 @@ class _EventRegistrationScreenState extends State<EventRegistrationScreen> {
           content: Text(errorMessage),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          margin: const EdgeInsets.all(16),
         ),
       );
     }
@@ -163,38 +169,61 @@ class _EventRegistrationScreenState extends State<EventRegistrationScreen> {
   void _showRegistrationSuccessDialog() {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
         title: const Text(
-          'Registration Successful',
+          'Success!',
           style: TextStyle(fontWeight: FontWeight.bold),
+          textAlign: TextAlign.center,
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.check_circle, color: _primaryColor, size: 60),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _primaryColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.check_circle, color: _primaryColor, size: 60),
+            ),
             const SizedBox(height: 16),
-            const Text('Event has been successfully registered.'),
+            Text(
+              'Your event has been successfully registered.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: _secondaryTextColor, fontSize: 15),
+            ),
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => EventDetailsScreen()),
-              );
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.white,
-              backgroundColor: _primaryColor,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          Center(
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => EventDetailsScreen()),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: _primaryColor,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                minimumSize: const Size(200, 45),
+              ),
+              child: const Text(
+                'View Events',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              ),
             ),
-            child: const Text('OK'),
           ),
+          const SizedBox(height: 8),
         ],
       ),
     );
@@ -225,7 +254,7 @@ class _EventRegistrationScreenState extends State<EventRegistrationScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
-              elevation: 2,
+              elevation: 0,
               color: _cardColor,
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
@@ -239,23 +268,25 @@ class _EventRegistrationScreenState extends State<EventRegistrationScreen> {
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
-                          color: _primaryColor,
+                          color: _textColor,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
-                        'Enter event details below',
+                      Text(
+                        'Fill in the details to create your event',
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.grey,
+                          color: _secondaryTextColor,
                         ),
                       ),
                       const SizedBox(height: 32),
+
+                      // Organizer Information Section
                       _buildSectionTitle('Organizer Information'),
                       _buildTextField(
                         _nameController,
                         'Your Name',
-                        Icons.person_outline,
+                        Icons.person_outline_rounded,
                       ),
                       _buildDropdownField(
                         'Batch',
@@ -271,7 +302,10 @@ class _EventRegistrationScreenState extends State<EventRegistrationScreen> {
                         (val) => setState(() => _selectedDepartment = val),
                         Icons.business_outlined,
                       ),
-                      const SizedBox(height: 24),
+
+                      const SizedBox(height: 32),
+
+                      // Event Information Section
                       _buildSectionTitle('Event Information'),
                       _isLoadingCategories
                           ? Center(
@@ -299,6 +333,7 @@ class _EventRegistrationScreenState extends State<EventRegistrationScreen> {
                         _eventPurposeController,
                         'Event Purpose',
                         Icons.description_outlined,
+                        maxLines: 3,
                       ),
                       _buildDatePickerField(),
                       _buildTextField(
@@ -312,13 +347,19 @@ class _EventRegistrationScreenState extends State<EventRegistrationScreen> {
                         Icons.group_outlined,
                         keyboardType: TextInputType.number,
                       ),
-                      const SizedBox(height: 24),
+
+                      const SizedBox(height: 32),
+
+                      // Event Banner Section
                       _buildSectionTitle('Event Banner'),
                       _buildImagePicker(),
+
                       const SizedBox(height: 40),
+
+                      // Submit Button
                       SizedBox(
                         width: double.infinity,
-                        height: 50,
+                        height: 52,
                         child: _isSubmitting
                             ? Center(
                                 child: CircularProgressIndicator(
@@ -333,13 +374,13 @@ class _EventRegistrationScreenState extends State<EventRegistrationScreen> {
                                   foregroundColor: Colors.white,
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
                                 ),
                                 child: const Text(
-                                  'SUBMIT EVENT',
+                                  'CREATE EVENT',
                                   style: TextStyle(
-                                    fontSize: 15,
+                                    fontSize: 16,
                                     fontWeight: FontWeight.w600,
                                     letterSpacing: 0.5,
                                   ),
@@ -359,47 +400,73 @@ class _EventRegistrationScreenState extends State<EventRegistrationScreen> {
 
   Widget _buildSectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: _primaryColor,
-        ),
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 20,
+            decoration: BoxDecoration(
+              color: _primaryColor,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: _textColor,
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildTextField(
       TextEditingController controller, String label, IconData icon,
-      {TextInputType keyboardType = TextInputType.text}) {
+      {TextInputType keyboardType = TextInputType.text, int maxLines = 1}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: TextFormField(
         controller: controller,
         keyboardType: keyboardType,
+        maxLines: maxLines,
         decoration: InputDecoration(
           labelText: label,
           labelStyle: TextStyle(
-            color: Colors.grey.shade600,
+            color: _secondaryTextColor,
             fontSize: 14,
           ),
-          prefixIcon: Icon(
-            icon,
-            color: _primaryColor,
-            size: 20,
+          prefixIcon: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Icon(
+              icon,
+              color: _primaryColor,
+              size: 20,
+            ),
           ),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide.none,
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: Colors.grey.shade200, width: 1),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: Colors.grey.shade200, width: 1),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: _primaryColor, width: 1.5),
           ),
           filled: true,
           fillColor: _textFieldBgColor,
-          contentPadding: const EdgeInsets.symmetric(vertical: 14),
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
           floatingLabelBehavior: FloatingLabelBehavior.never,
         ),
-        style: const TextStyle(fontSize: 14),
+        style: TextStyle(fontSize: 15, color: _textColor),
         validator: (value) => value!.isEmpty ? 'Please enter $label' : null,
       ),
     );
@@ -413,21 +480,33 @@ class _EventRegistrationScreenState extends State<EventRegistrationScreen> {
         decoration: InputDecoration(
           labelText: label,
           labelStyle: TextStyle(
-            color: Colors.grey.shade600,
+            color: _secondaryTextColor,
             fontSize: 14,
           ),
-          prefixIcon: Icon(
-            icon,
-            color: _primaryColor,
-            size: 20,
+          prefixIcon: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Icon(
+              icon,
+              color: _primaryColor,
+              size: 20,
+            ),
           ),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide.none,
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: Colors.grey.shade200, width: 1),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: Colors.grey.shade200, width: 1),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: _primaryColor, width: 1.5),
           ),
           filled: true,
           fillColor: _textFieldBgColor,
-          contentPadding: const EdgeInsets.symmetric(vertical: 6),
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
           floatingLabelBehavior: FloatingLabelBehavior.never,
         ),
         value: selectedValue,
@@ -436,19 +515,20 @@ class _EventRegistrationScreenState extends State<EventRegistrationScreen> {
             value: option,
             child: Text(
               option,
-              style: const TextStyle(fontSize: 14),
+              style: TextStyle(fontSize: 15, color: _textColor),
             ),
           );
         }).toList(),
         onChanged: onChanged,
         validator: (value) => value == null ? 'Please select $label' : null,
         icon: Icon(
-          Icons.arrow_drop_down,
+          Icons.keyboard_arrow_down_rounded,
           color: _primaryColor,
         ),
         dropdownColor: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        style: const TextStyle(fontSize: 14, color: Colors.black87),
+        borderRadius: BorderRadius.circular(10),
+        style: TextStyle(fontSize: 15, color: _textColor),
+        isExpanded: true,
       ),
     );
   }
@@ -461,24 +541,42 @@ class _EventRegistrationScreenState extends State<EventRegistrationScreen> {
         decoration: InputDecoration(
           labelText: 'Event Dates',
           labelStyle: TextStyle(
-            color: Colors.grey.shade600,
+            color: _secondaryTextColor,
             fontSize: 14,
           ),
-          prefixIcon: Icon(
-            Icons.calendar_today_outlined,
-            color: _primaryColor,
-            size: 20,
+          prefixIcon: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Icon(
+              Icons.calendar_today_outlined,
+              color: _primaryColor,
+              size: 20,
+            ),
           ),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide.none,
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(
+                color: const Color.fromARGB(255, 255, 255, 255), width: 1),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(
+                color: const Color.fromARGB(255, 255, 255, 255), width: 1),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: _primaryColor, width: 1.5),
           ),
           filled: true,
           fillColor: _textFieldBgColor,
-          contentPadding: const EdgeInsets.symmetric(vertical: 14),
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
           floatingLabelBehavior: FloatingLabelBehavior.never,
+          suffixIcon: Icon(
+            Icons.arrow_drop_down,
+            color: _primaryColor,
+          ),
         ),
-        style: const TextStyle(fontSize: 14),
+        style: TextStyle(fontSize: 15, color: _textColor),
         readOnly: true,
         onTap: _pickDateRange,
         validator: (value) =>
@@ -498,13 +596,19 @@ class _EventRegistrationScreenState extends State<EventRegistrationScreen> {
             colorScheme: ColorScheme.light(
               primary: _primaryColor,
               onPrimary: Colors.white,
-              onSurface: Colors.black,
+              onSurface: _textColor,
             ),
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
                 foregroundColor: _primaryColor,
               ),
             ),
+            dialogBackgroundColor:
+                Colors.white, // Background color of the picker
+            scaffoldBackgroundColor:
+                Colors.white, // Ensures calendar bg is white
+            canvasColor:
+                Colors.white, // Ensures the calendar area is also white
           ),
           child: child!,
         );
@@ -526,40 +630,55 @@ class _EventRegistrationScreenState extends State<EventRegistrationScreen> {
       child: _image == null
           ? DottedBorder(
               borderType: BorderType.RRect,
-              radius: const Radius.circular(8),
+              radius: const Radius.circular(12),
               dashPattern: const [6, 3],
               strokeWidth: 1.5,
               color: Colors.grey.shade400,
               child: Container(
-                height: 160,
+                height: 180,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: _textFieldBgColor,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.add_photo_alternate_outlined,
-                      size: 40,
-                      color: Colors.grey.shade500,
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: _primaryColor.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.add_photo_alternate_outlined,
+                        size: 30,
+                        color: _primaryColor,
+                      ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     Text(
-                      'Upload event banner',
+                      'Upload Event Banner',
                       style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 14,
+                        color: _textColor,
+                        fontSize: 15,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Recommended: 1200 × 630',
-                      style: TextStyle(
-                        color: Colors.grey.shade500,
-                        fontSize: 12,
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        'Recommended: 1200 × 630',
+                        style: TextStyle(
+                          color: _secondaryTextColor,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                   ],
@@ -569,26 +688,34 @@ class _EventRegistrationScreenState extends State<EventRegistrationScreen> {
           : Stack(
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                   child: Image.file(
                     _image!,
                     width: double.infinity,
-                    height: 160,
+                    height: 180,
                     fit: BoxFit.cover,
                   ),
                 ),
                 Positioned(
-                  top: 8,
-                  right: 8,
+                  top: 10,
+                  right: 10,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.black54,
+                      color: Colors.white,
                       shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          spreadRadius: 1,
+                          blurRadius: 3,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
                     ),
                     child: IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.edit_outlined,
-                        color: Colors.white,
+                        color: _primaryColor,
                         size: 18,
                       ),
                       onPressed: _pickImage,

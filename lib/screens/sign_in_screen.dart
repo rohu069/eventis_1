@@ -16,6 +16,7 @@ class _SignInScreenState extends State<SignInScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true;
 
   final Client client = Client()
     ..setEndpoint('https://cloud.appwrite.io/v1')
@@ -61,7 +62,11 @@ class _SignInScreenState extends State<SignInScreen> {
       );
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Sign-up successful! Please log in.')),
+        SnackBar(
+          content: Text('Account created successfully'),
+          backgroundColor: Colors.green.shade700,
+          behavior: SnackBarBehavior.floating,
+        ),
       );
 
       await Future.delayed(Duration(milliseconds: 500));
@@ -72,33 +77,82 @@ class _SignInScreenState extends State<SignInScreen> {
       );
     } on AppwriteException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Sign-up failed: ${e.message}')),
+        SnackBar(
+          content: Text('Sign-up failed: ${e.message}'),
+          backgroundColor: Colors.red.shade700,
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
-  Widget _buildTextField(TextEditingController controller, String hint,
-      {TextInputType keyboardType = TextInputType.text,
-      bool obscureText = false}) {
+  Widget _buildTextField(
+    TextEditingController controller,
+    String label,
+    String hint, {
+    TextInputType keyboardType = TextInputType.text,
+    bool isPassword = false,
+    IconData? prefixIcon,
+  }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
-      obscureText: obscureText,
-      style: TextStyle(color: Colors.white),
+      obscureText: isPassword ? _obscurePassword : false,
+      style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w500),
       decoration: InputDecoration(
+        labelText: label,
         hintText: hint,
-        hintStyle: TextStyle(color: Colors.white70),
+        hintStyle: TextStyle(color: Colors.black38),
+        labelStyle: TextStyle(color: Colors.black54),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.15),
+        fillColor: Colors.white,
+        prefixIcon:
+            prefixIcon != null ? Icon(prefixIcon, color: Colors.black54) : null,
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(
+                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                  color: Colors.black54,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _obscurePassword = !_obscurePassword;
+                  });
+                },
+              )
+            : null,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+          borderSide: BorderSide.none,
         ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.indigo.shade400, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.red.shade400, width: 1.5),
+        ),
+        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
-      validator: (value) =>
-          value == null || value.isEmpty ? 'This field is required' : null,
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return '$label is required';
+        }
+        if (isPassword && value.length < 8) {
+          return 'Password must be at least 8 characters';
+        }
+        if (controller == _emailController && !value.contains('@')) {
+          return 'Please enter a valid email';
+        }
+        return null;
+      },
     );
   }
 
@@ -116,143 +170,215 @@ class _SignInScreenState extends State<SignInScreen> {
       ),
       body: Stack(
         children: [
+          // Background image with gradient overlay
           Container(
             decoration: BoxDecoration(
               image: DecorationImage(
                 image: AssetImage('assets/stool.jpg'),
                 fit: BoxFit.cover,
+                colorFilter: ColorFilter.mode(
+                  Colors.black.withOpacity(0.5),
+                  BlendMode.darken,
+                ),
               ),
             ),
           ),
-          Container(color: Colors.black.withOpacity(0.3)),
-          Center(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  Animate(
-                    effects: [
-                      FadeEffect(duration: 600.ms, delay: 300.ms),
-                      SlideEffect(
-                        begin: const Offset(0, -0.2),
-                        end: Offset.zero,
-                        curve: Curves.easeOut,
-                        duration: 600.ms,
-                      ),
-                    ],
-                    child: const Text(
-                      "NEW USER?",
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: 1.2,
-                        shadows: [
-                          Shadow(
-                            color: Color.fromARGB(137, 255, 255, 255),
-                            blurRadius: 5,
-                            offset: Offset(0, 2),
+
+          // Gradient overlay
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withOpacity(0.7),
+                ],
+              ),
+            ),
+          ),
+
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Title with animation
+                    Animate(
+                      effects: [
+                        FadeEffect(duration: 600.ms, delay: 300.ms),
+                        SlideEffect(
+                          begin: const Offset(0, -0.2),
+                          end: Offset.zero,
+                          curve: Curves.easeOut,
+                          duration: 600.ms,
+                        ),
+                      ],
+                      child: Column(
+                        children: [
+                          Text(
+                            "Create Account",
+                            style: TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 0.5,
+                            ),
                           ),
+                          SizedBox(height: 8),
+                          Text(
+                            "Please fill in your details to get started",
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.white70,
+                            ),
+                          ),
+                          SizedBox(height: 32),
                         ],
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: 8),
-
-                  // Subtitle text
-                  Animate(
-                    effects: [
-                      FadeEffect(duration: 600.ms, delay: 400.ms),
-                    ],
-                    child: const Text(
-                      "Register Here",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ),
-
-                  Animate(
-                    effects: [
-                      FadeEffect(duration: 600.ms),
-                      SlideEffect(
+                    // Form container with animation
+                    Animate(
+                      effects: [
+                        FadeEffect(duration: 600.ms, delay: 400.ms),
+                        SlideEffect(
                           begin: Offset(0, 0.2),
                           end: Offset.zero,
-                          curve: Curves.easeOut),
-                    ],
-                    child: Padding(
-                      padding: EdgeInsets.all(24),
+                          curve: Curves.easeOut,
+                          duration: 600.ms,
+                        ),
+                      ],
                       child: Container(
                         padding: EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
+                          color: Colors.white.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                              color: Colors.white.withOpacity(0.2), width: 1.5),
+                            color: Colors.white.withOpacity(0.1),
+                            width: 1,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color.fromARGB(255, 255, 255, 255)
-                                  .withOpacity(0.1),
+                              color: Colors.black.withOpacity(0.1),
                               blurRadius: 10,
-                              spreadRadius: 2,
+                              spreadRadius: 0,
                             ),
                           ],
                         ),
                         child: Form(
                           key: _formKey,
                           child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               _buildTextField(
-                                  _nameController, 'Enter your name'),
-                              SizedBox(height: 16),
-                              _buildTextField(_studentIdController,
-                                  'Enter your Student ID'),
-                              SizedBox(height: 16),
-                              _buildTextField(
-                                  _phoneController, 'Enter your phone number',
-                                  keyboardType: TextInputType.phone),
+                                _nameController,
+                                'Full Name',
+                                'Enter your full name',
+                                prefixIcon: Icons.person_outline,
+                              ),
                               SizedBox(height: 16),
                               _buildTextField(
-                                  _emailController, 'Enter your email',
-                                  keyboardType: TextInputType.emailAddress),
+                                _studentIdController,
+                                'Student ID',
+                                'Enter your student ID',
+                                prefixIcon: Icons.badge_outlined,
+                              ),
                               SizedBox(height: 16),
                               _buildTextField(
-                                  _passwordController, 'Enter your password',
-                                  obscureText: true),
-                              SizedBox(height: 30),
+                                _phoneController,
+                                'Phone Number',
+                                'Enter your phone number',
+                                keyboardType: TextInputType.phone,
+                                prefixIcon: Icons.phone_outlined,
+                              ),
+                              SizedBox(height: 16),
+                              _buildTextField(
+                                _emailController,
+                                'Email',
+                                'Enter your email address',
+                                keyboardType: TextInputType.emailAddress,
+                                prefixIcon: Icons.email_outlined,
+                              ),
+                              SizedBox(height: 16),
+                              _buildTextField(
+                                _passwordController,
+                                'Password',
+                                'Create a strong password',
+                                isPassword: true,
+                                prefixIcon: Icons.lock_outline,
+                              ),
+                              SizedBox(height: 32),
                               SizedBox(
-                                width: double.infinity,
-                                height: 55,
+                                height: 56,
                                 child: ElevatedButton(
                                   onPressed: _isLoading ? null : _signUp,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.indigo.shade600,
                                     foregroundColor: Colors.white,
                                     shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(15)),
-                                    elevation: 5,
-                                    shadowColor: Colors.indigo.withOpacity(0.5),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    elevation: 2,
+                                    shadowColor: Colors.black.withOpacity(0.3),
                                   ),
                                   child: _isLoading
-                                      ? CircularProgressIndicator(
-                                          color: Colors.white, strokeWidth: 3)
-                                      : Text('Sign Up',
+                                      ? SizedBox(
+                                          width: 24,
+                                          height: 24,
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : Text(
+                                          'Sign Up',
                                           style: TextStyle(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                              letterSpacing: 1.2)),
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
                                 ),
+                              ),
+                              SizedBox(height: 24),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'Already have an account?',
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => LoginScreen(),
+                                        ),
+                                      );
+                                    },
+                                    child: Text(
+                                      'Log In',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

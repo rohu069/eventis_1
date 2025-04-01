@@ -26,7 +26,6 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
     try {
       final events = await AppwriteService.getMyEvents();
       Map<String, List<Map<String, dynamic>>> eventRegistrations = {};
-
       final appwriteService = AppwriteService();
 
       for (var event in events) {
@@ -40,7 +39,6 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
 
         var registeredUsers =
             await appwriteService.getEventRegistrations(eventId) ?? [];
-
         registeredUsers = registeredUsers.map((user) {
           return {
             "user_name": user["user_name"] ?? "Unknown",
@@ -64,15 +62,45 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
         setState(() {
           isLoading = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error fetching events: ${e.toString()}'),
-            backgroundColor: Colors.red.shade700,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        _showErrorSnackBar('Error fetching events: ${e.toString()}');
       }
     }
+  }
+
+  Future<void> _deleteEvent(String eventId) async {
+    final isDeleted = await AppwriteService.deleteEvent(eventId);
+    if (isDeleted) {
+      _showSuccessSnackBar('Event deleted successfully');
+      fetchMyEvents();
+    } else {
+      _showErrorSnackBar('Failed to delete event');
+    }
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red.shade800,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(10),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green.shade800,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(10),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   String _formatDate(String? dateString) {
@@ -87,18 +115,20 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
           'My Events',
           style: TextStyle(fontWeight: FontWeight.w600),
         ),
+        centerTitle: false,
         elevation: 0,
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        foregroundColor: Theme.of(context).textTheme.titleLarge?.color,
+        backgroundColor: Colors.transparent,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh_rounded),
             onPressed: () {
               setState(() {
                 isLoading = true;
@@ -110,10 +140,14 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
         ],
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: CircularProgressIndicator(
+                color: Theme.of(context).primaryColor,
+              ),
+            )
           : myEvents.isEmpty
               ? _buildEmptyState()
-              : _buildEventsList(),
+              : _buildEventsList(isDarkMode),
     );
   }
 
@@ -123,24 +157,28 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.event_busy,
+            Icons.event_note_rounded,
             size: 80,
-            color: Colors.grey.shade400,
+            color: Colors.grey.withOpacity(0.3),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Text(
             "No events created yet",
             style: TextStyle(
               fontSize: 20,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey.shade700,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).textTheme.titleLarge?.color,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             "Events you create will appear here",
             style: TextStyle(
-              color: Colors.grey.shade600,
+              color: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.color
+                  ?.withOpacity(0.7),
             ),
           ),
         ],
@@ -148,7 +186,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
     );
   }
 
-  Widget _buildEventsList() {
+  Widget _buildEventsList(bool isDarkMode) {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: myEvents.length,
@@ -158,52 +196,89 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
         final registeredUsers = registrations[eventId] ?? [];
         final isVerified = event['is_verified'] == true;
 
+        // Determine colors based on verification status and theme
+        final Color cardBorderColor = isVerified
+            ? isDarkMode
+                ? Colors.grey.shade800
+                : Colors.grey.shade200
+            : isDarkMode
+                ? Colors.red.shade800
+                : Colors.red.shade200;
+
+        final Color cardBackgroundColor = isVerified
+            ? isDarkMode
+                ? Colors.grey.shade900.withOpacity(0.3)
+                : Colors.white
+            : isDarkMode
+                ? Colors.red.shade900.withOpacity(0.1)
+                : Colors.red.shade50.withOpacity(0.5);
+
+        final Color iconBackgroundColor = isVerified
+            ? isDarkMode
+                ? Colors.blue.shade900
+                : Colors.blue.shade50
+            : isDarkMode
+                ? Colors.red.shade900
+                : Colors.red.shade50;
+
+        final Color iconColor = isVerified
+            ? isDarkMode
+                ? Colors.blue.shade300
+                : Colors.blue.shade700
+            : isDarkMode
+                ? Colors.red.shade300
+                : Colors.red.shade700;
+
+        final Color badgeBackgroundColor = isVerified
+            ? isDarkMode
+                ? Colors.blue.shade900
+                : Colors.blue.shade50
+            : isDarkMode
+                ? Colors.red.shade900
+                : Colors.red.shade100;
+
+        final Color badgeTextColor = isVerified
+            ? isDarkMode
+                ? Colors.blue.shade300
+                : Colors.blue.shade700
+            : isDarkMode
+                ? Colors.red.shade300
+                : Colors.red.shade700;
+
         return Card(
           margin: const EdgeInsets.only(bottom: 16),
           elevation: 0,
+          color: cardBackgroundColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(
-              color: isVerified ? Colors.grey.shade200 : Colors.red.shade200,
+              color: cardBorderColor,
               width: isVerified ? 1 : 1.5,
             ),
           ),
           child: Theme(
             data: Theme.of(context).copyWith(
               dividerColor: Colors.transparent,
-              colorScheme: Theme.of(context).colorScheme.copyWith(
-                    background: isVerified
-                        ? Colors.white
-                        : Colors.red.shade50.withOpacity(0.5),
-                  ),
             ),
             child: ExpansionTile(
-              tilePadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 8,
-              ),
-              childrenPadding: const EdgeInsets.only(
-                left: 16,
-                right: 16,
-                bottom: 16,
-              ),
+              tilePadding: const EdgeInsets.all(16),
+              childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               expandedCrossAxisAlignment: CrossAxisAlignment.start,
               title: Row(
                 children: [
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: 56,
+                    height: 56,
                     decoration: BoxDecoration(
-                      color:
-                          isVerified ? Colors.blue.shade50 : Colors.red.shade50,
-                      borderRadius: BorderRadius.circular(12),
+                      color: iconBackgroundColor,
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     child: Icon(
-                      isVerified ? Icons.event_available : Icons.event_busy,
-                      color: isVerified
-                          ? Colors.blue.shade700
-                          : Colors.red.shade700,
-                      size: 24,
+                      isVerified
+                          ? Icons.event_available_rounded
+                          : Icons.pending_rounded,
+                      color: iconColor,
+                      size: 28,
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -213,164 +288,167 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                       children: [
                         Text(
                           event['event_name'] ?? "Unnamed Event",
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                            fontSize: 18,
+                            color:
+                                Theme.of(context).textTheme.titleLarge?.color,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                         Row(
                           children: [
                             Icon(
-                              Icons.calendar_today,
+                              Icons.calendar_today_rounded,
                               size: 14,
-                              color: Colors.grey.shade600,
+                              color: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.color
+                                  ?.withOpacity(0.7),
                             ),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: 6),
                             Text(
                               _formatDate(event['event_date']),
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.grey.shade700,
+                                color: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.color
+                                    ?.withOpacity(0.8),
                               ),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: badgeBackgroundColor,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isVerified
+                                    ? Icons.people_rounded
+                                    : Icons.warning_rounded,
+                                size: 14,
+                                color: badgeTextColor,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                isVerified
+                                    ? '${registeredUsers.length} ${registeredUsers.length == 1 ? 'registration' : 'registrations'}'
+                                    : 'Pending verification',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: badgeTextColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
                 ],
               ),
-              subtitle: Padding(
-                padding: const EdgeInsets.only(top: 8, left: 64),
-                child: Row(
-                  children: [
-                    if (!isVerified)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.red.shade100,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.warning_amber_rounded,
-                              size: 14,
-                              color: Colors.red.shade700,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Pending verification',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.red.shade700,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    else
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.people,
-                              size: 14,
-                              color: Colors.blue.shade700,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${registeredUsers.length} registrations',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.blue.shade700,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
+              trailing: IconButton(
+                icon: Icon(
+                  Icons.delete_outline_rounded,
+                  color: Theme.of(context).colorScheme.error,
                 ),
+                onPressed: () async {
+                  final confirm = await _showDeleteConfirmationDialog(
+                      event['event_name'] ?? "this event");
+                  if (confirm) {
+                    _deleteEvent(eventId);
+                  }
+                },
+                tooltip: 'Delete Event',
               ),
               children: [
                 if (isVerified) ...[
-                  const Divider(),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Registrations',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade800,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  if (registeredUsers.isEmpty)
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
+                  const Divider(height: 24),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
                         children: [
                           Icon(
-                            Icons.info_outline,
-                            color: Colors.grey.shade500,
+                            Icons.people_alt_rounded,
+                            size: 18,
+                            color: Theme.of(context).primaryColor,
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 8),
                           Text(
-                            'No registrations yet',
+                            "Registered Users",
                             style: TextStyle(
-                              color: Colors.grey.shade700,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                              color: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.color,
                             ),
                           ),
                         ],
                       ),
-                    )
-                  else
-                    ...registeredUsers.map((user) => _buildUserTile(user)),
-                ] else
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          color: Colors.red.shade700,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
+                      const SizedBox(height: 12),
+                      if (registeredUsers.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
                           child: Text(
-                            'This event is pending verification. Registrations will be available once verified.',
+                            "No registrations yet",
                             style: TextStyle(
-                              color: Colors.red.shade700,
+                              fontStyle: FontStyle.italic,
+                              color: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.color
+                                  ?.withOpacity(0.7),
                             ),
                           ),
+                        )
+                      else
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: registeredUsers.length,
+                          separatorBuilder: (context, index) =>
+                              const Divider(height: 16),
+                          itemBuilder: (context, index) {
+                            final user = registeredUsers[index];
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildUserInfoRow(Icons.person_rounded,
+                                      "Name", user['user_name']),
+                                  const SizedBox(height: 6),
+                                  _buildUserInfoRow(Icons.email_rounded,
+                                      "Email", user['user_email']),
+                                  const SizedBox(height: 6),
+                                  _buildUserInfoRow(Icons.phone_rounded,
+                                      "Phone", user['user_phone']),
+                                ],
+                              ),
+                            );
+                          },
                         ),
-                      ],
-                    ),
+                    ],
                   ),
+                ],
               ],
             ),
           ),
@@ -379,97 +457,76 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
     );
   }
 
-  Widget _buildUserTile(Map<String, dynamic> user) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: Colors.blue.shade100,
-            child: Text(
-              _getInitials(user["user_name"]),
-              style: TextStyle(
-                color: Colors.blue.shade800,
-                fontWeight: FontWeight.bold,
-              ),
+  Widget _buildUserInfoRow(IconData icon, String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          icon,
+          size: 16,
+          color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.8),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 60,
+          child: Text(
+            "$label:",
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.color
+                  ?.withOpacity(0.8),
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  user["user_name"] ?? "Unknown",
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.email_outlined,
-                      size: 14,
-                      color: Colors.grey.shade600,
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        user["user_email"] ?? "N/A",
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade700,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.phone_outlined,
-                      size: 14,
-                      color: Colors.grey.shade600,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      user["user_phone"] ?? "N/A",
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey.shade700,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              color: Theme.of(context).textTheme.bodyMedium?.color,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  String _getInitials(String? name) {
-    if (name == null || name.isEmpty) return "?";
-
-    final nameParts = name.split(" ");
-    if (nameParts.length > 1) {
-      return (nameParts[0].isNotEmpty ? nameParts[0][0] : "") +
-          (nameParts[1].isNotEmpty ? nameParts[1][0] : "");
-    }
-
-    return name.isNotEmpty ? name[0].toUpperCase() : "?";
+  Future<bool> _showDeleteConfirmationDialog(String eventName) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text('Delete Event'),
+              content: Text('Are you sure you want to delete "$eventName"?'),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Cancel'),
+                  style: TextButton.styleFrom(
+                    foregroundColor:
+                        Theme.of(context).textTheme.bodyMedium?.color,
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: const Text('Delete'),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
   }
 }

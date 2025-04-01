@@ -19,11 +19,64 @@ class EventFullDetailsScreen extends StatefulWidget {
 class _EventFullDetailsScreenState extends State<EventFullDetailsScreen> {
   bool _isRegistered = false;
   bool _isLoading = false;
+  bool eventDatePassed =
+      false; // Add this line to track if the event date has passed
 
   @override
   void initState() {
     super.initState();
     _checkRegistrationStatus();
+    eventDatePassed = _isEventDatePassed(widget.event["event_date"]);
+  }
+
+  // Function to check if event date has passed
+
+  bool _isEventDatePassed(String? eventDateString) {
+    if (eventDateString == null || eventDateString.isEmpty) return true;
+
+    try {
+      // If the event date contains a range (e.g., "2025-04-23 → 2025-04-24")
+      if (eventDateString.contains("→")) {
+        // Extract the start date of the range
+        final startDateString = eventDateString.split("→")[0].trim();
+
+        // Create a DateFormat for the "yyyy-MM-dd" format (e.g., "2025-04-23")
+        final dateFormat = DateFormat('yyyy-MM-dd');
+
+        // Parse the start date
+        final startDate = dateFormat.parse(startDateString);
+
+        // Get the current date (ignoring the time part for comparison)
+        final now = DateTime.now();
+
+        // Ensure we're comparing only the date portion (without time)
+        final eventDateOnly =
+            DateTime(startDate.year, startDate.month, startDate.day);
+        final nowOnly = DateTime(now.year, now.month, now.day);
+
+        return eventDateOnly.isBefore(nowOnly) ||
+            eventDateOnly.isAtSameMomentAs(nowOnly);
+      } else {
+        // If the date is not a range, parse it as a single date
+        final dateFormat =
+            DateFormat('MMM dd, yyyy'); // Format for "Apr 02, 2025"
+        final eventDate = dateFormat.parse(eventDateString);
+
+        // Get the current date (ignoring the time part for comparison)
+        final now = DateTime.now();
+
+        // Ensure we're comparing only the date portion (without time)
+        final eventDateOnly =
+            DateTime(eventDate.year, eventDate.month, eventDate.day);
+        final nowOnly = DateTime(now.year, now.month, now.day);
+
+        return eventDateOnly.isBefore(nowOnly) ||
+            eventDateOnly.isAtSameMomentAs(nowOnly);
+      }
+    } catch (e) {
+      print("❌ Error parsing event date: $e");
+      return true; // If error in parsing, assume the event date is passed
+    }
   }
 
   Future<void> _checkRegistrationStatus() async {
@@ -370,12 +423,12 @@ class _EventFullDetailsScreenState extends State<EventFullDetailsScreen> {
                         child: SizedBox(
                           width: double.infinity,
                           height: 54,
-                          child: _isRegistered
+                          child: eventDatePassed
                               ? OutlinedButton.icon(
                                   onPressed: null,
-                                  icon: const Icon(Icons.check_circle),
+                                  icon: const Icon(Icons.access_time),
                                   label: const Text(
-                                    "Already Registered",
+                                    "Time Exceeded for Registration",
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
@@ -389,22 +442,43 @@ class _EventFullDetailsScreenState extends State<EventFullDetailsScreen> {
                                     ),
                                   ),
                                 )
-                              : FilledButton.icon(
-                                  onPressed: _registerForEvent,
-                                  icon: const Icon(Icons.app_registration),
-                                  label: const Text(
-                                    "Register Now",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
+                              : _isRegistered
+                                  ? OutlinedButton.icon(
+                                      onPressed: null,
+                                      icon: const Icon(Icons.check_circle),
+                                      label: const Text(
+                                        "Already Registered",
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      style: OutlinedButton.styleFrom(
+                                        side: BorderSide(
+                                            color: colorScheme.outline),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                    )
+                                  : FilledButton.icon(
+                                      onPressed: _registerForEvent,
+                                      icon: const Icon(Icons.app_registration),
+                                      label: const Text(
+                                        "Register Now",
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      style: FilledButton.styleFrom(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                  style: FilledButton.styleFrom(
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                ),
                         ),
                       ),
                     ],

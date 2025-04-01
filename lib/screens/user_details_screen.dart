@@ -1,8 +1,10 @@
+// ignore: unused_import
 import 'package:appwrite/appwrite.dart';
 import 'package:flutter/material.dart';
 import 'package:new_event/screens/my_events_screen.dart';
 import 'package:new_event/services/appwrite_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+// ignore: unused_import
 import 'package:url_launcher/url_launcher.dart';
 
 class UserDetailsScreen extends StatefulWidget {
@@ -357,6 +359,7 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
   }
 
   Widget _buildActionsSection(BuildContext context) {
+    // ignore: unused_local_variable
     final primaryColor = Theme.of(context).primaryColor;
 
     return Padding(
